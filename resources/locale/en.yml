@@ -12,18 +12,18 @@ neoncube-private-messages:
       enable_custom_colors: Enable custom colors
     permissions:
       start_label: Start private conversations
+      delete_message_label: Delete own private messages
       allow_users_to_receive_email_notifications: Allow users to receive email notifications when they receive a private message
   forum:
     dropdown:
       tooltip: Conversations
     modal:
       title: Start Conversation
-      help: Start typing a username to start a chat.
+      help: Start typing a display name or username to start a chat.
       help_start: >-
-        Type your first message. This will be the only message you can send
-        until {username} responds. Click the user to select a different
+        Type your first message. Click the user to select a different
         recipient.
-      search_recipients: Enter username...
+      search_recipients: Enter display name or username...
       submit: Send & Start Conversation
       copied: Your message has been copied to the clipboard.
       more_users: >-

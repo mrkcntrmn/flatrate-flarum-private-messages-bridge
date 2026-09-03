@@ -2,19 +2,30 @@
 
 namespace Neoncube\FlarumPrivateMessages\Commands;
 
-use Flarum\User\AssertPermissionTrait;
 use Illuminate\Contracts\Bus\Dispatcher as BusDispatcher;
-use InvalidArgumentException;
+use Illuminate\Database\ConnectionInterface;
 use Neoncube\FlarumPrivateMessages\Conversation;
+use Neoncube\FlarumPrivateMessages\ConversationAccess;
 use Neoncube\FlarumPrivateMessages\ConversationUser;
+use Neoncube\FlarumPrivateMessages\ConversationValidator;
 
 class StartConversationHandler
 {
     protected $bus;
+    protected $access;
+    protected $validator;
+    protected $db;
 
-    public function __construct(BusDispatcher $bus)
-    {
+    public function __construct(
+        BusDispatcher $bus,
+        ConversationAccess $access,
+        ConversationValidator $validator,
+        ConnectionInterface $db
+    ) {
         $this->bus = $bus;
+        $this->access = $access;
+        $this->validator = $validator;
+        $this->db = $db;
     }
 
     public function handle(StartConversation $command)
@@ -24,56 +35,41 @@ class StartConversationHandler
 
         $actor->assertCan('startConversation');
 
-        if (intval($data['attributes']['recipient']) === intval($actor->id))
-            throw new InvalidArgumentException;
+        $recipientId = $this->validator->normalizeRecipientId(
+            $data['attributes']['recipient'] ?? null,
+            $actor
+        );
+        $messageContents = $this->validator->messageContentsFromData($data);
 
-        $conversationIds = ConversationUser::where('user_id', $actor->id)
-            ->pluck('conversation_id')
-            ->all();
-
-        $oldConversation = null;
-
-        foreach ($conversationIds as $id) {
-            $conversation = conversation::find($id);
-
-            if (in_array($data['attributes']['recipient'], $conversation
-                ->recipients()
-                ->pluck('user_id')
-                ->all())) {
-                $oldConversation = $conversation;
-                break;
-            }
-        }
+        $oldConversation = $this->validator->findExactOneToOneConversation($actor, $recipientId);
 
         if ($oldConversation) {
+            $this->access->assertParticipant($actor, $oldConversation);
             $oldConversation->notNew = true;
             return $oldConversation;
         }
 
-        $conversation = Conversation::start();
+        return $this->db->transaction(function () use ($actor, $data, $recipientId, $messageContents) {
+            $conversation = Conversation::start();
+            $conversation->save();
 
-        // TODO validator
+            foreach ([$actor->id, $recipientId] as $participantId) {
+                $recipient = new ConversationUser();
+                $recipient->conversation_id = $conversation->id;
+                $recipient->user_id = $participantId;
+                $recipient->save();
+            }
 
-        $conversation->save();
+            // Reuse NewMessage for the initial body after participants exist.
+            $payload = $data;
+            $payload['attributes']['messageContents'] = $messageContents;
+            $payload['attributes']['conversationId'] = $conversation->id;
 
-        foreach (array_merge([$actor->id], (array)$data['attributes']['recipient']) as $recipientId) {
-            $recipient = new ConversationUser();
-            $recipient->conversation_id = $conversation->id;
-            $recipient->user_id = $recipientId;
-
-            $recipient->save();
-        }
-
-        try {
             $this->bus->dispatch(
-                new NewMessage($actor, $data, $conversation->id)
+                new NewMessage($actor, $payload, $conversation->id)
             );
-        } catch (\Exception $e) {
-            $conversation->delete;
 
-            throw $e;
-        }
-
-        return $conversation;
+            return $conversation;
+        });
     }
 }

@@ -87,6 +87,14 @@ app.initializers.add('neoncube-private-messages', () => {
     )
     .registerPermission(
       {
+        icon: 'fas fa-trash',
+        label: app.translator.trans('neoncube-private-messages.admin.permissions.delete_message_label'),
+        permission: 'deleteMessage',
+      },
+      'moderate'
+    )
+    .registerPermission(
+      {
         icon: 'fas fa-user-lock',
         label: app.translator.trans('neoncube-private-messages.admin.permissions.allow_users_to_receive_email_notifications'),
         permission: 'neoncube-private-messages.allowUsersToReceiveEmailNotifications',
