@@ -1,66 +1,77 @@
 {
-    "name": "neoncube/flarum-private-messages",
-    "description": "A Flarum extension for adding private messages to your forum! Private messages (PM's) are also known as \"direct messages\" (DM's). (e.g. \"Send me a PM!\" or \"Send me a DM!\")",
-    "keywords": [
-        "flarum",
-        "friendsofflarum",
-        "private message",
-        "direct messsage",
-        "private messaging",
-        "direct messaging",
-        "PM",
-        "DM"
-    ],
-    "type": "flarum-extension",
-    "license": "MIT",
-    "authors": [
-        {
-            "name": "Charlie Kern",
-            "email": "Charlie.K@redevs.org",
-            "homepage": "https://redevs.org"
-        },
-        {
-            "name": "David Wheatleu",
-            "email": "hi@davwheat.dev",
-            "homepage": "https://davwheat.dev"
-        },
-        {
-            "name": "CXM",
-            "email": "littlecxm@gmail.com",
-            "homepage": "https://littlecxm.me"
-        },
-        {
-            "name": "Eli Black",
-            "email": "eliblack@outlook.com",
-            "homepage": "https://mylittlewordland.com"
-        }
-    ],
-    "support": {
-        "issues": "https://github.com/neoncube/flarum-private-messaging/issues",
-        "source": "https://github.com/neoncube/flarum-private-messaging",
-        "forum": "https://discuss.flarum.org/d/35388-private-messages"
+  "name": "neoncube/flarum-private-messages",
+  "description": "A Flarum extension for adding private messages to your forum! Private messages (PM's) are also known as \"direct messages\" (DM's). (e.g. \"Send me a PM!\" or \"Send me a DM!\")",
+  "keywords": [
+    "flarum",
+    "friendsofflarum",
+    "private message",
+    "direct messsage",
+    "private messaging",
+    "direct messaging",
+    "PM",
+    "DM"
+  ],
+  "type": "flarum-extension",
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "Charlie Kern",
+      "email": "Charlie.K@redevs.org",
+      "homepage": "https://redevs.org"
     },
-    "require": {
-        "flarum/core": "^1.8.5"
+    {
+      "name": "David Wheatleu",
+      "email": "hi@davwheat.dev",
+      "homepage": "https://davwheat.dev"
     },
-    "replace": {
-        "kyrne/whisper": "<=0.1.4",
-        "littlecxm/whisper": "<0.1.5"
+    {
+      "name": "CXM",
+      "email": "littlecxm@gmail.com",
+      "homepage": "https://littlecxm.me"
     },
-    "autoload": {
-        "psr-4": {
-            "Neoncube\\FlarumPrivateMessages\\": "src/"
-        }
-    },
-    "extra": {
-        "flarum-extension": {
-            "title": "Private messages",
-            "icon": {
-                "name": "fas fa-comment-alt",
-                "background": "#ADD445",
-                "color": "#000"
-            },
-            "category": "feature"
-        }
+    {
+      "name": "Eli Black",
+      "email": "eliblack@outlook.com",
+      "homepage": "https://mylittlewordland.com"
     }
+  ],
+  "support": {
+    "issues": "https://github.com/neoncube/flarum-private-messaging/issues",
+    "source": "https://github.com/neoncube/flarum-private-messaging",
+    "forum": "https://discuss.flarum.org/d/35388-private-messages"
+  },
+  "require": {
+    "flarum/core": "^1.8.5"
+  },
+  "require-dev": {
+    "phpunit/phpunit": "^9.6"
+  },
+  "replace": {
+    "kyrne/whisper": "<=0.1.4",
+    "littlecxm/whisper": "<0.1.5"
+  },
+  "autoload": {
+    "psr-4": {
+      "Neoncube\\FlarumPrivateMessages\\": "src/"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "Neoncube\\FlarumPrivateMessages\\Tests\\": "tests/"
+    }
+  },
+  "scripts": {
+    "test": "phpunit"
+  },
+  "extra": {
+    "flarum-extension": {
+      "title": "Private messages",
+      "icon": {
+        "name": "fas fa-comment-alt",
+        "background": "#ADD445",
+        "color": "#000"
+      },
+      "category": "feature"
+    }
+  }
 }
