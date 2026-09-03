@@ -2,8 +2,8 @@
 
 namespace Neoncube\FlarumPrivateMessages\Tests;
 
+use Flarum\Foundation\ValidationException;
 use Flarum\User\User;
-use InvalidArgumentException;
 use Neoncube\FlarumPrivateMessages\ConversationValidator;
 use PHPUnit\Framework\TestCase;
 
@@ -35,7 +35,7 @@ class ConversationValidatorTest extends TestCase
      */
     public function testRejectsMalformedRecipients($recipient): void
     {
-        $this->expectException(InvalidArgumentException::class);
+        $this->expectException(ValidationException::class);
         $this->validator()->normalizeRecipientId($recipient, $this->actor());
     }
 
@@ -58,13 +58,13 @@ class ConversationValidatorTest extends TestCase
 
     public function testRejectsSelfRecipient(): void
     {
-        $this->expectException(InvalidArgumentException::class);
+        $this->expectException(ValidationException::class);
         $this->validator([7 => true])->normalizeRecipientId(7, $this->actor(7));
     }
 
     public function testRejectsNonexistentRecipient(): void
     {
-        $this->expectException(InvalidArgumentException::class);
+        $this->expectException(ValidationException::class);
         $this->validator([])->normalizeRecipientId(99, $this->actor());
     }
 
@@ -77,8 +77,8 @@ class ConversationValidatorTest extends TestCase
         foreach ([null, 1, true, [], new \stdClass(), '', '   ', "\n\t"] as $bad) {
             try {
                 $v->normalizeMessageContents($bad);
-                $this->fail('Expected InvalidArgumentException for ' . var_export($bad, true));
-            } catch (InvalidArgumentException $e) {
+                $this->fail('Expected ValidationException for ' . var_export($bad, true));
+            } catch (ValidationException $e) {
                 $this->assertNotSame('', $e->getMessage());
             }
         }

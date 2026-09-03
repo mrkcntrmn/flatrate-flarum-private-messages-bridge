@@ -50,6 +50,25 @@ class User {
 PHP);
 }
 
+
+if (!class_exists(\Flarum\Foundation\ValidationException::class)) {
+    eval(<<<'PHP'
+namespace Flarum\Foundation;
+class ValidationException extends \Exception {
+    protected $attributes;
+    protected $relationships;
+    public function __construct(array $attributes, array $relationships = []) {
+        $this->attributes = $attributes;
+        $this->relationships = $relationships;
+        $messages = [implode("\n", $attributes), implode("\n", $relationships)];
+        parent::__construct(implode("\n", $messages));
+    }
+    public function getAttributes() { return $this->attributes; }
+    public function getRelationships() { return $this->relationships; }
+}
+PHP);
+}
+
 if (!class_exists(\Flarum\User\Exception\PermissionDeniedException::class)) {
     eval(<<<'PHP'
 namespace Flarum\User\Exception;
