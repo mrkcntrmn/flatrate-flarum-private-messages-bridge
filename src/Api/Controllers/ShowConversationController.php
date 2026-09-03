@@ -3,11 +3,11 @@
 namespace Neoncube\FlarumPrivateMessages\Api\Controllers;
 
 use Flarum\Api\Controller\AbstractShowController;
-use Flarum\User\Exception\PermissionDeniedException;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 use Neoncube\FlarumPrivateMessages\Api\Serializers\ConversationSerializer;
 use Neoncube\FlarumPrivateMessages\Conversation;
+use Neoncube\FlarumPrivateMessages\ConversationAccess;
 use Neoncube\FlarumPrivateMessages\Message;
 use Psr\Http\Message\ServerRequestInterface;
 use Tobscure\JsonApi\Document;
@@ -22,6 +22,14 @@ class ShowConversationController extends AbstractShowController
         'recipients.user'
     ];
 
+    /** @var ConversationAccess */
+    protected $access;
+
+    public function __construct(ConversationAccess $access)
+    {
+        $this->access = $access;
+    }
+
     protected function data(ServerRequestInterface $request, Document $document)
     {
         $conversationId = Arr::get($request->getQueryParams(), 'id');
@@ -30,10 +38,7 @@ class ShowConversationController extends AbstractShowController
         $include = $this->extractInclude($request);
 
         $conversation = Conversation::findOrFail($conversationId);
-
-        if (!$conversation->recipients()->where('user_id', $actor->id)->get()) {
-            throw new PermissionDeniedException;
-        }
+        $this->access->assertParticipant($actor, $conversation);
 
         if (in_array('messages', $include)) {
             $messagesRelationship = $this->getMessageRelationships($include);
@@ -86,7 +91,7 @@ class ShowConversationController extends AbstractShowController
         $actor = $request->getAttribute('actor');
 
         if (($near = Arr::get($queryParams, 'page.near')) > 1) {
-            $offset = message::getIndexForNumber($conversation->id, $near, $actor);
+            $offset = Message::getIndexForNumber($conversation->id, $near, $actor);
             $offset = max(0, $offset - $limit / 2);
         } else {
             $offset = $this->extractOffset($request);

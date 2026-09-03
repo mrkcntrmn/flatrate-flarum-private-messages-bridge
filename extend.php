@@ -30,7 +30,7 @@ return [
         ->post('/neoncube-private-messages/messages', 'neoncube-private-messages.messages.create', Controllers\CreateMessageController::class)
         ->post('/neoncube-private-messages/messages/typing', 'neoncube-private-messages.message.typing', Controllers\TypingPusherController::class)
         ->post('/neoncube-private-messages/messages/read', 'neoncube-private-messages.message.read', Controllers\ReadMessageController::class)
-        ->delete('/neoncube-private-messages/messages{id}', 'neoncube-private-messages.messages.delete', Controllers\DeleteMessageController::class)
+        ->delete('/neoncube-private-messages/messages/{id}', 'neoncube-private-messages.messages.delete', Controllers\DeleteMessageController::class)
         //->patch('/messages/{id}', 'messages.update', Controllers\UpdateMessageController::class)
         //->delete('/messages/{id}', 'messages.delete', Controllers\DeleteMessageController::class)
         ->get('/neoncube-private-messages/conversations/{id}', 'neoncube-private-messages.conversations.show', Controllers\ShowConversationController::class),

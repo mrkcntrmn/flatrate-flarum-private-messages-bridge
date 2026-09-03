@@ -4,34 +4,47 @@ namespace Neoncube\FlarumPrivateMessages\Commands;
 
 use Carbon\Carbon;
 use Flarum\User\Exception\PermissionDeniedException;
-use Neoncube\FlarumPrivateMessages\Conversation;
+use Neoncube\FlarumPrivateMessages\ConversationAccess;
 use Neoncube\FlarumPrivateMessages\ConversationUser;
 use Neoncube\FlarumPrivateMessages\Message;
 use Pusher\Pusher;
 
 class ReadMessageHandler
 {
+    /** @var ConversationAccess */
+    protected $access;
+
+    public function __construct(ConversationAccess $access)
+    {
+        $this->access = $access;
+    }
+
     public function handle(ReadMessage $command)
     {
         $actor = $command->actor;
         $data = $command->data;
 
-        $conversation = Conversation::find($data['conversationId']);
+        if ($actor->isGuest()) {
+            throw new PermissionDeniedException;
+        }
+
+        $conversationId = $data['conversationId'] ?? null;
+        $messageId = $data['messageId'] ?? null;
+
+        $conversation = $this->access->assertParticipantInConversationId($actor, $conversationId);
 
         $convUser = $conversation->recipients()->where('user_id', $actor->id)->first();
-
         if (!$convUser) {
             throw new PermissionDeniedException;
         }
 
-        $oldRead = $convUser->last_read_message_number;
+        $message = Message::findOrFail($messageId);
 
-        $message = Message::find($data['messageId']);
-        
-        if ($message->conversation_id != $conversation->id) {
+        if ((int) $message->conversation_id !== (int) $conversation->id) {
             throw new PermissionDeniedException;
         }
 
+        $oldRead = $convUser->last_read_message_number;
         $number = $message->number;
 
         if ($number > $convUser->last_read_message_number) {
