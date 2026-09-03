@@ -23,7 +23,7 @@ Temporary FlatRate.wiki-maintained, security-hardened Flarum 1.x private-message
 | Field | Value |
 | --- | --- |
 | Composer package | `flatrate/flarum-private-messages-bridge` |
-| Flarum extension ID | `flatrate-flarum-private-messages-bridge` |
+| Flarum extension ID | `flatrate-private-messages-bridge` |
 | Admin title | Private Messages — FlatRate Bridge |
 | Supported Flarum | `flarum/core` `^1.8.5` (Flarum 1.x) |
 | Packagist package | `flatrate/flarum-private-messages-bridge` (after publish) |
@@ -35,7 +35,7 @@ Temporary FlatRate.wiki-maintained, security-hardened Flarum 1.x private-message
 ### Renamed (package / admin identity)
 
 - Composer name → `flatrate/flarum-private-messages-bridge`
-- Flarum extension ID / `app.extensionData.for(...)` → `flatrate-flarum-private-messages-bridge`
+- Flarum extension ID / `app.extensionData.for(...)` → `flatrate-private-messages-bridge`
 - Admin extension title → `Private Messages — FlatRate Bridge`
 - Support / homepage URLs → bridge GitHub repository
 - Package description → FlatRate bridge framing

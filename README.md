@@ -13,6 +13,11 @@ Derived from [`neoncube/flarum-private-messages`](https://github.com/neoncube2/f
 
 **Not** an official Neoncube release and **not** labeled as `neoncube/flarum-private-messages` 1.5.5.
 
+## Package identity
+
+- Composer: `flatrate/flarum-private-messages-bridge`
+- Flarum extension ID: `flatrate-private-messages-bridge`
+
 ## Installation
 
 Do not install alongside `neoncube/flarum-private-messages` (Composer `conflict`).

@@ -3,7 +3,7 @@ import { getNeoncubePrivateMessagesDefaultColors } from '../admin-forum-common';
 
 app.initializers.add('neoncube-private-messages', () => {
   app.extensionData
-    .for('flatrate-flarum-private-messages-bridge')
+    .for('flatrate-private-messages-bridge')
     .registerSetting({
       setting: 'neoncube-private-messages.return_key',
       type: 'bool',
