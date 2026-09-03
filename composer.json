@@ -1,6 +1,6 @@
 {
-  "name": "neoncube/flarum-private-messages",
-  "description": "A Flarum extension for adding private messages to your forum! Private messages (PM's) are also known as \"direct messages\" (DM's). (e.g. \"Send me a PM!\" or \"Send me a DM!\")",
+  "name": "flatrate/flarum-private-messages-bridge",
+  "description": "Temporary FlatRate.wiki-maintained security-hardened Flarum 1.x private-message bridge.",
   "keywords": [
     "flarum",
     "friendsofflarum",
@@ -36,8 +36,8 @@
     }
   ],
   "support": {
-    "issues": "https://github.com/neoncube/flarum-private-messaging/issues",
-    "source": "https://github.com/neoncube/flarum-private-messaging",
+    "issues": "https://github.com/mrkcntrmn/flatrate-flarum-private-messages-bridge/issues",
+    "source": "https://github.com/mrkcntrmn/flatrate-flarum-private-messages-bridge",
     "forum": "https://discuss.flarum.org/d/35388-private-messages"
   },
   "require": {
@@ -65,7 +65,7 @@
   },
   "extra": {
     "flarum-extension": {
-      "title": "Private messages",
+      "title": "Private Messages \u2014 FlatRate Bridge",
       "icon": {
         "name": "fas fa-comment-alt",
         "background": "#ADD445",
@@ -73,5 +73,9 @@
       },
       "category": "feature"
     }
+  },
+  "homepage": "https://github.com/mrkcntrmn/flatrate-flarum-private-messages-bridge",
+  "conflict": {
+    "neoncube/flarum-private-messages": "*"
   }
 }

@@ -1,32 +1,57 @@
-# Private Messages
+# Private Messages — FlatRate Bridge
 
-A [Flarum](http://flarum.org) extension for adding private messages to your forum!
+Temporary FlatRate.wiki-maintained Flarum 1.x private-message bridge.
 
-Private messages (PM's) are also known as "direct messages" (DM's). (e.g. "Send me a PM!" or "Send me a DM!")
+Derived from [`neoncube/flarum-private-messages`](https://github.com/neoncube2/flarum-private-messages) (MIT).
 
-![Flarum Private Messages screenshot](https://raw.githubusercontent.com/neoncube2/flarum-private-messages/main/resources/screenshot.jpg)
+| Lineage | SHA |
+| --- | --- |
+| Upstream base | `9694186ffb429337f8f39304f9848f0054c12425` |
+| FlatRate hardened source | `ed20f58040b8efe8d69d7940b3fa7010ffb032f2` |
+
+**Purpose:** provide a safe temporary Flarum 1 private-messaging package for FlatRate.wiki while upstream review or Flarum 2 messaging lands.
+
+**Not** an official Neoncube release and **not** labeled as `neoncube/flarum-private-messages` 1.5.5.
 
 ## Installation
 
-	composer remove kyrne/whisper --no-update
-	composer remove littlecxm/whisper --no-update
-    composer require neoncube/flarum-private-messages:"*"
+Do not install alongside `neoncube/flarum-private-messages` (Composer `conflict`).
+
+```bash
+composer remove kyrne/whisper --no-update
+composer remove littlecxm/whisper --no-update
+composer require flatrate/flarum-private-messages-bridge:1.0.0
+php flarum migrate
+php flarum cache:clear
+```
+
+Prefer an exact version pin in production. Do not use `*`, `^1.0`, `dev-*`, or a raw Git branch for production.
 
 ## Updating
 
-    composer update neoncube/flarum-private-messages
-    php flarum migrate
-    php flarum cache:clear
+```bash
+composer update flatrate/flarum-private-messages-bridge --with-dependencies
+php flarum migrate
+php flarum cache:clear
+```
 
-## Links
+## Retirement
 
-- [Report an issue via Flarum forums](https://discuss.flarum.org/d/35388-private-messages)
-- [Report an issue via Github](https://github.com/neoncube2/flarum-private-messages/issues)
+This bridge is temporary. Retire it when either:
+
+1. a reviewed fixed upstream `neoncube/flarum-private-messages` release is available, or
+2. the forum moves to Flarum 2 and official `flarum/messages`.
+
+See [BRIDGE.md](BRIDGE.md) for identity, retained compatibility IDs, and migration notes.
+
+## Security
+
+Report vulnerabilities privately. See [SECURITY.md](SECURITY.md).
 
 ## Credits
 
-Thank you to [Kyrne](https://redevs.org), who made the original [Whisper](https://flarum.org/index.php/extension/kyrne/whisper) extension, which this extension is mostly based off of!
+Thank you to [Kyrne](https://redevs.org) for the original [Whisper](https://flarum.org/extension/kyrne/whisper) extension, and to the Neoncube / Whisper contributors listed in `composer.json` (Charlie Kern, David Wheatleu, CXM, Eli Black) for the upstream Flarum private-messages work this bridge packages.
 
-Thank you to [David Wheatleu](https://davwheat.dev) and [CXM](https://littlecxm.me/) for their many bug fixes and contributions!
+FlatRate.wiki maintains this bridge distribution and security hardening only; upstream authorship remains with the original authors.
 
-[![MIT license](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/neoncube/flarum-private-messages/blob/master/LICENSE)
+[![MIT license](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)

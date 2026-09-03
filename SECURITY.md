@@ -1,16 +1,20 @@
 # Security policy
 
-If you believe you have found a security issue in this extension, please report it privately.
+If you believe you have found a security issue in this bridge extension, please report it privately before public disclosure.
 
-Preferred channel:
+## Contact
 
-1. GitHub private vulnerability reporting for this repository, if enabled; or
-2. Email one of the package authors listed in `composer.json` with subject prefix `[SECURITY] neoncube/flarum-private-messages`.
+1. Prefer **GitHub private vulnerability reporting** on [`mrkcntrmn/flatrate-flarum-private-messages-bridge`](https://github.com/mrkcntrmn/flatrate-flarum-private-messages-bridge) when that channel is enabled.
+2. Until the bridge repository is published or private reporting is available, contact operators via **GitHub Security** on the same repository path after publish (`mrkcntrmn/flatrate-flarum-private-messages-bridge`).
 
-Please include:
+Do not invent alternate email contacts. Do not open a public issue with weaponized reproduction steps before maintainers have had a reasonable opportunity to respond.
 
-- affected version/commit
-- impact summary (without weaponized exploit code)
-- minimal patch suggestion if available
+## What to include
 
-Do not open a public issue with reproduction steps that would enable third-party abuse before maintainers have had a reasonable opportunity to respond.
+- Affected version or commit SHA
+- Impact summary (without exploit PoC or weaponized payloads)
+- Minimal patch suggestion if available
+
+Vulnerabilities that may affect active FlatRate.wiki deployments should be reported privately first.
+
+This repository packages a security-hardened bridge derived from `neoncube/flarum-private-messages`. Historical upstream issues are tracked separately from this policy; do not republish exploit details here.
