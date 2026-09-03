@@ -564,6 +564,24 @@
   border-radius: 0 0 @border-radius 0;
 }
 
+// Keep long tokens/URLs inside the message pane across viewports.
+.ConversationsList,
+.ConversationsPage,
+.MessagesPage {
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+.ConversationsList .chat,
+.ConversationsList .message-content,
+.ConversationsList .message-text,
+.ConversationsList .chat-history,
+.ConversationsList .chat-message textarea {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
 @media(max-width: @screen-tablet-max) {
   .App--conversations {
     padding-bottom: 0;
@@ -581,7 +599,8 @@
     display: flex;
     flex-direction: column;
     margin: 0 auto;
-    max-width: 890px;
+    width: 100%;
+    max-width: 100%;
   }
 
   .ConversationsList .chat .chat-message {
@@ -596,7 +615,8 @@
 
   .ConversationsList {
     margin: 0 auto;
-    max-width: 890px;
+    width: 100%;
+    max-width: min(890px, 100%);
     .box-shadow(0 2px 6px @shadow-color);
   }
 }
