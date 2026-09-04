@@ -33,10 +33,17 @@ function test(name, fn) {
   }
 }
 
-test('SIDEBAR_DIRECT_MESSAGE_LABEL', () => {
+test('SIDEBAR_DIRECT_MESSAGES_LABEL', () => {
   const en = readFileSync(join(ROOT, 'resources/locale/en.yml'), 'utf8');
-  assert.match(en, /tooltip:\s*Direct Message\b/);
+  assert.match(en, /tooltip:\s*Direct Messages\b/);
   assert.doesNotMatch(en, /tooltip:\s*Conversations\b/);
+});
+
+test('SIDEBAR_DIRECT_MESSAGES_BELOW_NOTIFICATIONS', () => {
+  const src = readFileSync(join(JS_SRC, 'addConversationsDropdown.js'), 'utf8');
+  // Notifications uses core priority 10; Messages must sort after it.
+  assert.match(src, /items\.add\(\s*'Messages'\s*,\s*<ConversationsDropdown\s*\/>\s*,\s*5\s*\)/);
+  assert.doesNotMatch(src, /items\.add\(\s*'Messages'\s*,\s*<ConversationsDropdown\s*\/>\s*,\s*20\s*\)/);
 });
 
 test('PROFILE_DM_BUTTON_VISIBLE', () => {

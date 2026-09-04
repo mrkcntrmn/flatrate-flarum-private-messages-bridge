@@ -10,7 +10,8 @@ export default function () {
     // I think a better approach would be to load a count of how many conversations a user has, instead of actually loading all conversations
     // whenever loading a user.
     if (app.forum.attribute('canMessage') /* || (app.session.user && app.session.user.conversations().length)*/) {
-      items.add('Messages', <ConversationsDropdown />, 20);
+      // Below Notifications (core priority 10) in HeaderSecondary / mobile drawer.
+      items.add('Messages', <ConversationsDropdown />, 5);
     }
   });
 }

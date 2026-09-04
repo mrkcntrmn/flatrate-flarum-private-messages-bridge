@@ -16,7 +16,7 @@ neoncube-private-messages:
       allow_users_to_receive_email_notifications: Allow users to receive email notifications when they receive a private message
   forum:
     dropdown:
-      tooltip: Direct Message
+      tooltip: Direct Messages
     profile:
       direct_message: Direct Message
     modal:

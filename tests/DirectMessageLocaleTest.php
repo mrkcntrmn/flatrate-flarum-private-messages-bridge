@@ -7,12 +7,12 @@ use Symfony\Component\Yaml\Yaml;
 
 class DirectMessageLocaleTest extends TestCase
 {
-    public function testEnglishSidebarLabelIsDirectMessage(): void
+    public function testEnglishSidebarLabelIsDirectMessages(): void
     {
         $locale = $this->loadEnglishLocale();
 
         $this->assertSame(
-            'Direct Message',
+            'Direct Messages',
             $locale['neoncube-private-messages']['forum']['dropdown']['tooltip']
         );
     }
