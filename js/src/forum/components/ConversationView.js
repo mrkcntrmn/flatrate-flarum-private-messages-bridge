@@ -10,6 +10,9 @@ import withAttr from 'flarum/common/utils/withAttr';
 import icon from 'flarum/common/helpers/icon';
 import app from 'flarum/forum/app';
 
+const POLL_INTERVAL_MS = 5000;
+const NEAR_BOTTOM_PX = 80;
+
 export default class ConversationView extends Component {
   oninit(vnode) {
     this.newMessageCount = 0;
@@ -22,6 +25,8 @@ export default class ConversationView extends Component {
     this.typing = false;
     this.messageContent = Stream('');
     this.isNew = true;
+    this.pollInFlight = false;
+    this.pollTimer = null;
 
     const typingTimeoutInterval = () => {
       this.typingTimeout = true;
@@ -70,15 +75,31 @@ export default class ConversationView extends Component {
     app.cache.messages ??= [];
     app.cache.messages[this.conversation.id()] ??= [];
 
+    this.onVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        this.pollNewestMessages({ markRead: true });
+        this.startPolling();
+      } else {
+        this.stopPolling();
+      }
+    };
+
     this.getMessages();
   }
 
   onremove() {
+    this.stopPolling();
+    if (this.onVisibilityChange) {
+      document.removeEventListener('visibilitychange', this.onVisibilityChange);
+      this.onVisibilityChange = null;
+    }
+
     if (app.pusher) {
       app.pusher.then((object) => {
         const user = object.channels.user;
         user.unbind('typing');
         user.unbind('newMessage');
+        user.unbind('readMessage');
       });
     }
   }
@@ -99,6 +120,11 @@ export default class ConversationView extends Component {
 
   oncreate() {
     $('.chat-history').animate({ scrollTop: $('.chat-history').prop('scrollHeight') }, 1000);
+
+    document.addEventListener('visibilitychange', this.onVisibilityChange);
+    if (document.visibilityState === 'visible') {
+      this.startPolling();
+    }
 
     if (app.pusher) {
       app.pusher.then((object) => {
@@ -148,6 +174,134 @@ export default class ConversationView extends Component {
     }
   }
 
+  startPolling() {
+    if (this.pollTimer != null) {
+      return;
+    }
+    this.pollTimer = setInterval(() => {
+      this.pollNewestMessages({ markRead: true });
+    }, POLL_INTERVAL_MS);
+  }
+
+  stopPolling() {
+    if (this.pollTimer != null) {
+      clearInterval(this.pollTimer);
+      this.pollTimer = null;
+    }
+  }
+
+  isNearBottom() {
+    const list = document.querySelector('.chat-history');
+    if (!list) {
+      return true;
+    }
+    return list.scrollTop + list.clientHeight >= list.scrollHeight - NEAR_BOTTOM_PX;
+  }
+
+  messageCacheKey(message) {
+    if (!message) {
+      return null;
+    }
+    if (typeof message.id === 'function') {
+      return String(message.id());
+    }
+    if (message.data && message.data.id != null) {
+      return String(message.data.id);
+    }
+    return null;
+  }
+
+  pollNewestMessages({ markRead = false } = {}) {
+    if (this.pollInFlight) {
+      return;
+    }
+    if (document.visibilityState !== 'visible') {
+      return;
+    }
+
+    this.pollInFlight = true;
+    const conversationId = this.conversation.id();
+    const nearBottom = this.isNearBottom();
+
+    app.store
+      .find('neoncube-private-messages/messages', conversationId, { offset: 0 })
+      .then((results) => {
+        delete results.payload;
+
+        app.cache.messages ??= [];
+        app.cache.messages[conversationId] ??= [];
+        const cache = app.cache.messages[conversationId];
+
+        let added = 0;
+        let newestIncoming = null;
+
+        results.forEach((result) => {
+          const id = this.messageCacheKey(result);
+          if (!id || cache[id]) {
+            return;
+          }
+
+          cache[id] = result;
+          added += 1;
+
+          const isMine = parseInt(result.user().id()) === parseInt(app.session.user.id());
+          if (!isMine) {
+            this.newMessageCount += 1;
+            newestIncoming = result;
+          }
+        });
+
+        if (added > 0) {
+          m.redraw();
+          if (nearBottom) {
+            $('.chat-history').animate({ scrollTop: $('.chat-history').prop('scrollHeight') }, 400);
+          }
+
+          if (markRead && newestIncoming && document.visibilityState === 'visible') {
+            this.markMessageRead(newestIncoming);
+          }
+        }
+      })
+      .catch(() => {
+        // Transient poll failures must not clear the thread or spam fatal banners.
+      })
+      .then(() => {
+        this.pollInFlight = false;
+      });
+  }
+
+  markMessageRead(message) {
+    const messageId = this.messageCacheKey(message);
+    if (!messageId || !this.meRecipient) {
+      return;
+    }
+
+    const oldNumber = this.meRecipient.lastRead();
+
+    app
+      .request({
+        method: 'POST',
+        url: app.forum.attribute('apiUrl') + '/neoncube-private-messages/messages/read',
+        body: {
+          conversationId: this.conversation.id(),
+          messageId,
+        },
+      })
+      .then((response) => {
+        const newNumber = response.data.attributes.lastRead;
+        const lastUnreadMessage = app.session.user.unreadMessages();
+        const unreadMessages = lastUnreadMessage === 0 ? 0 : Math.max(0, lastUnreadMessage - (newNumber - oldNumber));
+
+        app.session.user.pushAttributes({
+          unreadMessages,
+        });
+
+        this.meRecipient.lastRead = Stream(newNumber);
+        m.redraw();
+      })
+      .catch(() => {});
+  }
+
   view(vnode) {
     const messages = app.cache.messages[this.conversation.id()];
 
@@ -180,7 +334,6 @@ export default class ConversationView extends Component {
                 )}
                 {messages
                   ? messages.slice()
-                    // .filter((message, index, self) => index === self.findIndex(t => t.message() === message.message()))
                     .sort((a, b) => a.createdAt() - b.createdAt())
                     .map((message, i) => {
                       const myMessage = parseInt(message.user().id()) === parseInt(app.session.user.id());
@@ -300,7 +453,6 @@ export default class ConversationView extends Component {
         this.isSending = false;
         $('.chat-history').animate({ scrollTop: $('.chat-history').prop('scrollHeight') }, 500);
 
-        // TODO: Can this be done when the message is created?
         app.request({
           method: 'POST',
           url: app.forum.attribute('apiUrl') + '/neoncube-private-messages/messages/read',
@@ -352,7 +504,7 @@ export default class ConversationView extends Component {
         if (results.length < 20) {
           this.isNew = false;
         }
-        results.forEach((result) => app.cache.messages[this.conversation.id()][result.data.id] = result);
+        results.forEach((result) => (app.cache.messages[this.conversation.id()][result.data.id] = result));
         this.loading = false;
         m.redraw();
       });

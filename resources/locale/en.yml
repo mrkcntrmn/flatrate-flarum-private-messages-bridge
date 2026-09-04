@@ -51,7 +51,7 @@ neoncube-private-messages:
           body: 'Message from {fromUser}'
       email:
         new_private_message:
-          subject: Message from {user}
-          youHaveReceivedNewMessage: You have received a new message from {user}!
-          viewMessage: View message
-          manageEmailSettings: Manage email settings
+          subject: New direct message from {user}
+          youHaveReceivedNewMessage: '{user} sent you a direct message on FlatRate.wiki.'
+          viewMessage: View Direct Message
+          manageEmailSettings: Manage Email Settings
