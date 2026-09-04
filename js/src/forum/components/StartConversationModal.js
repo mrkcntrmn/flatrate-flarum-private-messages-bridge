@@ -5,14 +5,15 @@ import username from 'flarum/common/helpers/username';
 import Stream from 'flarum/common/utils/Stream';
 import withAttr from 'flarum/common/utils/withAttr';
 import app from 'flarum/forum/app';
+import resolveConversationsRecipient from '../utils/resolveConversationsRecipient';
 
 export default class StartConversationModal extends Modal {
   oninit(vnode) {
     super.oninit(vnode);
 
-    app.cache.conversationsRecipient = null;
+    app.cache.conversationsRecipient = resolveConversationsRecipient(this.attrs.recipient ?? null);
 
-    this.conversations = this.attrs.conversations;
+    this.conversations = this.attrs.conversations ?? [];
 
     this.already = false;
 

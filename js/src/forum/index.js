@@ -11,6 +11,7 @@ import ConversationsPage from './components/ConversationsPage';
 import NewPrivateMessageNotification from './components/NewPrivateMessageNotification';
 import Stream from 'flarum/common/utils/Stream';
 import addConversationsDropdown from './addConversationsDropdown';
+import addDirectMessageUserControl from './addDirectMessageUserControl';
 import { getNeoncubePrivateMessagesColors } from '../admin-forum-common';
 
 app.initializers.add('neoncube-private-messages', (app) => {
@@ -27,6 +28,7 @@ app.initializers.add('neoncube-private-messages', (app) => {
   app.routes.messages = { path: '/conversations/:id', component: ConversationsPage };
 
   addConversationsDropdown();
+  addDirectMessageUserControl();
 
   setTimeout(() => {
     const colors = getNeoncubePrivateMessagesColors(app);

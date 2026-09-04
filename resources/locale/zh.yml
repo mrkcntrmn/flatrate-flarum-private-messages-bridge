@@ -8,6 +8,8 @@ neoncube-private-messages:
   forum:
     dropdown:
       tooltip: 私信
+    profile:
+      direct_message: Direct Message
     modal:
       title: 新私信
       help: 输入用户名开始聊天
