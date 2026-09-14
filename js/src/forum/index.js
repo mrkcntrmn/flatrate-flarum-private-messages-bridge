@@ -12,6 +12,7 @@ import NewPrivateMessageNotification from './components/NewPrivateMessageNotific
 import Stream from 'flarum/common/utils/Stream';
 import addConversationsDropdown from './addConversationsDropdown';
 import addDirectMessageUserControl from './addDirectMessageUserControl';
+import registerDirectMessagingProvider from './registerDirectMessagingProvider';
 import { getNeoncubePrivateMessagesColors } from '../admin-forum-common';
 
 app.initializers.add('neoncube-private-messages', (app) => {
@@ -29,6 +30,7 @@ app.initializers.add('neoncube-private-messages', (app) => {
 
   addConversationsDropdown();
   addDirectMessageUserControl();
+  registerDirectMessagingProvider();
 
   setTimeout(() => {
     const colors = getNeoncubePrivateMessagesColors(app);
@@ -72,7 +74,7 @@ app.initializers.add('neoncube-private-messages', (app) => {
 
     items.add('newPrivateMessage', {
       name: 'newPrivateMessage',
-      icon: 'fas fa-comment-alt',
+      icon: 'fas fa-paper-plane',
       label: app.translator.trans('neoncube-private-messages.forum.notifications.new_private_message'),
     });
   });

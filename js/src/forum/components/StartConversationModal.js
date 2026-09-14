@@ -74,13 +74,30 @@ export default class StartConversationModal extends Modal {
     this.recpient = recipient;
     app.cache.conversationsRecipient = null;
 
+    const draft = this.messageContent();
+    const onResolved = this.attrs.onConversationResolved;
+
     app.store
       .createRecord('conversations')
       .save({
-        messageContents: this.messageContent(),
+        messageContents: draft,
         recipient: recipient.id(),
       })
       .then((conversation) => {
+        if (onResolved) {
+          if (!conversation.notNew()) {
+            this.conversations.push(conversation);
+
+            m.redraw();
+            app.modal.close();
+            onResolved(conversation, { created: true, draft: null });
+          } else {
+            app.modal.close();
+            onResolved(conversation, { created: false, draft });
+          }
+          return;
+        }
+
         if (!conversation.notNew()) {
           this.conversations.push(conversation);
 

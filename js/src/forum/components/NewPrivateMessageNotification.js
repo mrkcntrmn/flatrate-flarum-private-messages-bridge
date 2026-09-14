@@ -2,7 +2,7 @@ import Notification from 'flarum/forum/components/Notification';
 
 export default class NewPrivateMessageNotification extends Notification {
   icon() {
-    return 'fas fa-message';
+    return 'fas fa-paper-plane';
   }
 
   href() {

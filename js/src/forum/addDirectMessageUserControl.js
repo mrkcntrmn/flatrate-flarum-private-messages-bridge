@@ -4,6 +4,7 @@ import Button from 'flarum/common/components/Button';
 import UserControls from 'flarum/forum/utils/UserControls';
 import StartConversationModal from './components/StartConversationModal';
 import canOfferDirectMessage from './utils/canOfferDirectMessage';
+import { messagingUiEnabled } from './utils/messagingUiEnabled';
 
 function openDirectMessageModal(user) {
   app.cache.conversations = app.cache.conversations || [];
@@ -18,6 +19,10 @@ function openDirectMessageModal(user) {
 
 export default function addDirectMessageUserControl() {
   extend(UserControls, 'userControls', function (items, user) {
+    if (messagingUiEnabled()) {
+      return;
+    }
+
     if (
       !canOfferDirectMessage({
         actor: app.session.user,
