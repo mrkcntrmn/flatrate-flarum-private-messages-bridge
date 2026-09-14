@@ -4,6 +4,7 @@ namespace Neoncube\FlarumPrivateMessages\Api\Serializers;
 
 use Flarum\Api\Serializer\AbstractSerializer;
 use Neoncube\FlarumPrivateMessages\Conversation;
+use Neoncube\FlarumPrivateMessages\ConversationUnreadAccounting;
 
 class ConversationSerializer extends AbstractSerializer
 {
@@ -20,17 +21,13 @@ class ConversationSerializer extends AbstractSerializer
         return [
             'status' => json_decode($conversation->status ?? 'null'),
             'createdAt' => $this->formatDate($conversation->created_at),
-            'updatedAt' => $this->formatDate($conversation->created_at),
+            'updatedAt' => $this->formatDate($conversation->updated_at),
             'totalMessages' => $conversation->total_messages,
             'notNew' => (bool) $conversation->notNew,
-            'unReadCount' => $conversation->messages()
-                ->get()
-                ->filter(function ($message) {
-                    if (!$message->is_seen) {
-                        return $message;
-                    }
-                })
-                ->count()
+            'unReadCount' => ConversationUnreadAccounting::unreadCountForActor(
+                $conversation,
+                $this->getActor()
+            ),
         ];
     }
 

@@ -23,7 +23,7 @@ export default class ConversationView extends Component {
     this.isSending = false;
     this.sendTimeout = true;
     this.typing = false;
-    this.messageContent = Stream('');
+    this.messageContent = Stream(vnode.attrs.initialDraft || '');
     this.isNew = true;
     this.pollInFlight = false;
     this.pollTimer = null;

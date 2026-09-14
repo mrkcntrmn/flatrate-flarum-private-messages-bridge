@@ -2,9 +2,14 @@ import { extend } from 'flarum/common/extend';
 import app from 'flarum/forum/app';
 import HeaderSecondary from 'flarum/forum/components/HeaderSecondary';
 import ConversationsDropdown from './components/ConversationsDropdown';
+import { messagingUiEnabled } from './utils/messagingUiEnabled';
 
 export default function () {
   extend(HeaderSecondary.prototype, 'items', function (items) {
+    if (messagingUiEnabled()) {
+      return;
+    }
+
     // TODO: It used to be that the conversations icon was also shown if the user had any conversations, but I've commented this out,
     // because it wasn't working, at least for me.
     // I think a better approach would be to load a count of how many conversations a user has, instead of actually loading all conversations

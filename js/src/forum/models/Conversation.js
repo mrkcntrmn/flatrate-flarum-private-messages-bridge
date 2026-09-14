@@ -6,6 +6,7 @@ export default class Conversation extends mixin(Model, {
   recipients: Model.hasMany('recipients'),
   totalMessages: Model.attribute('totalMessages'),
   notNew: Model.attribute('notNew'),
+  unReadCount: Model.attribute('unReadCount'),
   createdAt: Model.attribute('createdAt', Model.transformDate),
   updatedAt: Model.attribute('updatedAt', Model.transformDate),
 }) {
