@@ -6,6 +6,11 @@ import {
   idOf,
   normalizeDirectConversation,
 } from './utils/normalizeDirectConversation';
+import {
+  createResolveConversation,
+  isRenderableDirectConversation,
+  rememberConversationInCache,
+} from './utils/resolveDirectConversation';
 
 function actorId() {
   const user = app.session?.user;
@@ -34,11 +39,41 @@ function conversationByKey(key) {
   return app.store?.getById?.('conversations', id) || null;
 }
 
+function rememberConversation(conversation) {
+  app.cache = app.cache || {};
+  rememberConversationInCache(app.cache, conversation);
+}
+
+async function fetchConversationById(id) {
+  const result = await app.store.find('neoncube-private-messages/conversations', id, {}, {
+    // Swallow Flarum's default 403/404 alerts so Direct routes are not an existence oracle.
+    errorHandler() {},
+  });
+  if (result && result.payload) {
+    delete result.payload;
+  }
+  if (Array.isArray(result)) {
+    return result[0] || null;
+  }
+  return result || null;
+}
+
+const resolveInFlight = new Map();
+const resolveConversation = createResolveConversation({
+  getCached: conversationByKey,
+  fetchById: fetchConversationById,
+  remember: rememberConversation,
+  inflight: resolveInFlight,
+});
+
 /**
  * Registers app.flatRateMessagingSources.direct.
  *
  * findConversationWithUser returns the conversation model (or null) so the shell
  * can route with conversation.id() / { id: 'direct:'+id, key: String(id) }.
+ *
+ * resolveConversation returns the authorized conversation for a canonical Direct
+ * route without exposing Neoncube URLs on app.flatrateMessaging.
  */
 export default function registerDirectMessagingProvider() {
   app.flatRateMessagingSources ??= {};
@@ -57,6 +92,11 @@ export default function registerDirectMessagingProvider() {
       }
       return user.unreadMessages() || 0;
     },
+    getLoadedConversation(conversationId) {
+      const conversation = conversationByKey(conversationId);
+      return isRenderableDirectConversation(conversation) ? conversation : null;
+    },
+    resolveConversation,
     renderConversation({ key, context }) {
       const conversation = conversationByKey(key);
       return (

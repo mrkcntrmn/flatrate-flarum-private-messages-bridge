@@ -15,15 +15,26 @@ const {
   findExactOneToOneConversation,
   normalizeDirectConversation,
 } = await import(pathToFileURL(join(JS_SRC, 'utils/normalizeDirectConversation.js')).href);
+const {
+  createResolveConversation,
+  isFailClosedResolveError,
+  isRenderableDirectConversation,
+  rememberConversationInCache,
+} = await import(pathToFileURL(join(JS_SRC, 'utils/resolveDirectConversation.js')).href);
 
+const pending = [];
 function test(name, fn) {
-  try {
-    fn();
-    console.error(`[PASS] ${name}`);
-  } catch (err) {
-    console.error(`[FAIL] ${name}`);
-    throw err;
-  }
+  pending.push(
+    (async () => {
+      try {
+        await fn();
+        console.error(`[PASS] ${name}`);
+      } catch (err) {
+        console.error(`[FAIL] ${name}`);
+        throw err;
+      }
+    })()
+  );
 }
 
 function person(id, { displayName, username, nickname } = {}) {
@@ -111,6 +122,10 @@ test('provider registration source contract', () => {
   assert.match(provider, /listConversations/);
   assert.match(provider, /getUnreadTotal/);
   assert.match(provider, /renderConversation/);
+  assert.match(provider, /resolveConversation/);
+  assert.match(provider, /getLoadedConversation/);
+  assert.match(provider, /errorHandler\(\)\s*\{\s*\}/);
+  assert.match(provider, /neoncube-private-messages\/conversations',\s*id/);
   assert.match(provider, /findConversationWithUser/);
   assert.match(provider, /startConversationWithUser/);
   assert.match(provider, /onConversationResolved/);
@@ -181,4 +196,117 @@ test('private-message notification icons use paper-plane', () => {
   assert.doesNotMatch(grid, /fas fa-comment-alt/);
 });
 
+function renderableConversation(id) {
+  return {
+    id: () => String(id),
+    recipients: () => [{ user: () => ({ id: () => '2' }) }],
+  };
+}
+
+test('resolveConversation store hit does not fetch', async () => {
+  let fetches = 0;
+  const cached = renderableConversation(5);
+  const resolve = createResolveConversation({
+    getCached: (id) => (id === '5' ? cached : null),
+    fetchById: async () => {
+      fetches += 1;
+      return renderableConversation(5);
+    },
+    remember() {},
+  });
+  const result = await resolve('5');
+  assert.equal(result, cached);
+  assert.equal(fetches, 0);
+});
+
+test('resolveConversation cache miss fetches, remembers, and returns model', async () => {
+  const remembered = [];
+  const fetched = renderableConversation(5);
+  const resolve = createResolveConversation({
+    getCached: () => null,
+    fetchById: async (id) => {
+      assert.equal(id, '5');
+      return fetched;
+    },
+    remember(conversation) {
+      remembered.push(conversation);
+    },
+  });
+  const result = await resolve('5');
+  assert.equal(result, fetched);
+  assert.deepEqual(remembered, [fetched]);
+});
+
+test('resolveConversation maps 403/404 to null fail-closed', async () => {
+  const resolve404 = createResolveConversation({
+    getCached: () => null,
+    fetchById: async () => {
+      const error = new Error('not found');
+      error.status = 404;
+      throw error;
+    },
+    remember() {},
+  });
+  const resolve403 = createResolveConversation({
+    getCached: () => null,
+    fetchById: async () => {
+      const error = new Error('denied');
+      error.status = 403;
+      throw error;
+    },
+    remember() {},
+  });
+  assert.equal(await resolve404('999'), null);
+  assert.equal(await resolve403('5'), null);
+  assert.equal(isFailClosedResolveError({ status: 401 }), true);
+  assert.equal(isFailClosedResolveError({ status: 500 }), false);
+});
+
+test('resolveConversation rethrows non-authorization errors', async () => {
+  const resolve = createResolveConversation({
+    getCached: () => null,
+    fetchById: async () => {
+      throw new Error('network down');
+    },
+    remember() {},
+  });
+  await assert.rejects(() => resolve('5'), /network down/);
+});
+
+test('resolveConversation reuses in-flight fetch for the same id', async () => {
+  let started = 0;
+  let finish;
+  const resolve = createResolveConversation({
+    getCached: () => null,
+    fetchById: () => {
+      started += 1;
+      return new Promise((resolvePromise) => {
+        finish = resolvePromise;
+      });
+    },
+    remember(conversation) {
+      return conversation;
+    },
+  });
+  const first = resolve('5');
+  const second = resolve('5');
+  assert.equal(started, 1);
+  const model = renderableConversation(5);
+  finish(model);
+  assert.equal(await first, await second);
+  assert.equal(started, 1);
+});
+
+test('rememberConversationInCache upserts by id', () => {
+  const cache = { conversations: [renderableConversation(5)] };
+  const updated = renderableConversation(5);
+  rememberConversationInCache(cache, updated);
+  rememberConversationInCache(cache, renderableConversation(6));
+  assert.equal(cache.conversations.length, 2);
+  assert.equal(cache.conversations[0], updated);
+  assert.equal(isRenderableDirectConversation(null), false);
+  assert.equal(isRenderableDirectConversation({ recipients: () => [] }), false);
+});
+
+await Promise.all(pending);
 console.error('MESSAGING001_DIRECT_PROVIDER=PASS');
