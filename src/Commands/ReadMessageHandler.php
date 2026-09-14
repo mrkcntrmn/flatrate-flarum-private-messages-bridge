@@ -5,6 +5,7 @@ namespace Neoncube\FlarumPrivateMessages\Commands;
 use Carbon\Carbon;
 use Flarum\User\Exception\PermissionDeniedException;
 use Neoncube\FlarumPrivateMessages\ConversationAccess;
+use Neoncube\FlarumPrivateMessages\ConversationUnreadAccounting;
 use Neoncube\FlarumPrivateMessages\ConversationUser;
 use Neoncube\FlarumPrivateMessages\Message;
 use Pusher\Pusher;
@@ -44,8 +45,8 @@ class ReadMessageHandler
             throw new PermissionDeniedException;
         }
 
-        $oldRead = $convUser->last_read_message_number;
-        $number = $message->number;
+        $oldRead = (int) $convUser->last_read_message_number;
+        $number = (int) $message->number;
 
         if ($number > $convUser->last_read_message_number) {
             $convUser->last_read_message_number = $number;
@@ -54,7 +55,17 @@ class ReadMessageHandler
 
         $convUser->save();
 
-        $actor->decrement('unread_messages', $number - $oldRead);
+        $newlyRead = $number > $oldRead ? $number : $oldRead;
+        $consumedUnread = ConversationUnreadAccounting::consumedIncoming(
+            $conversation->id,
+            $actor->id,
+            $oldRead,
+            $newlyRead,
+            Message::where('conversation_id', $conversation->id)
+        );
+        if ($consumedUnread > 0) {
+            $actor->decrement('unread_messages', $consumedUnread);
+        }
 
         if ($actor->unread_messages < 0) {
             $actor->unread_messages = 0;
