@@ -101,5 +101,28 @@ test('send failure preserves draft path in source', () => {
   assert.match(v2, /this\.isSending\s*=\s*true/);
 });
 
+test('V2 composer send is icon-only paper plane with aria-label', () => {
+  const v2 = readFileSync(join(JS_SRC, 'components/MessagesDirectConversationView.js'), 'utf8');
+  assert.match(v2, /icon="fas fa-paper-plane"/);
+  assert.match(v2, /Button--icon/);
+  assert.match(v2, /MessagesComposer-send/);
+  assert.match(v2, /aria-label=\{this\.sendFailed \? 'Retry' : 'Send message'\}/);
+  assert.doesNotMatch(v2, /MessagesComposer-send[\s\S]*?>[\s\S]*?Send Message/);
+  assert.doesNotMatch(v2, /MessagesComposer-send[\s\S]*?>[\s\S]*?translator\.trans\('neoncube-private-messages\.forum\.chat\.send'\)/);
+});
+
+test('Direct V2 LESS keeps primary icon-send Button-icon visible', () => {
+  const less = readFileSync(join(ROOT, 'resources/less/extension.less'), 'utf8');
+  assert.match(
+    less,
+    /\.MessagesDirectSurface \.DirectComposer \.MessagesComposer-send\.Button--icon \.Button-icon/
+  );
+  assert.match(
+    less,
+    /\.MessagesDirectSurface \.MessagesComposer \.MessagesComposer-send\.Button--icon \.Button-icon/
+  );
+  assert.match(less, /display:\s*inline-block/);
+});
+
 await Promise.all(pending);
 console.error('MESSAGING002_DIRECT_V2=PASS');

@@ -37,12 +37,13 @@ function test(name, fn) {
   );
 }
 
-function person(id, { displayName, username, nickname } = {}) {
+function person(id, { displayName, username, nickname, avatarUrl } = {}) {
   return {
     id: () => String(id),
     displayName: () => displayName,
     username: () => username,
     nickname: () => nickname,
+    avatarUrl: () => avatarUrl,
   };
 }
 
@@ -71,7 +72,10 @@ test('normalizeDirectConversation maps shell row without message body', () => {
     id: 9,
     updatedAt: at,
     unReadCount: 2,
-    people: [person(1, { username: 'alice' }), person(2, { displayName: 'Bob', username: 'bob' })],
+    people: [
+      person(1, { username: 'alice' }),
+      person(2, { displayName: 'Bob', username: 'bob', avatarUrl: 'https://cdn.example/bob.png' }),
+    ],
   });
   const row = normalizeDirectConversation(conversation, 1);
   assert.deepEqual(row, {
@@ -79,6 +83,7 @@ test('normalizeDirectConversation maps shell row without message body', () => {
     kind: 'direct',
     key: '9',
     title: 'Bob',
+    avatarUrl: 'https://cdn.example/bob.png',
     activityAt: '2026-09-14T15:00:00.000Z',
     unreadCount: 2,
     isPublic: false,
@@ -87,6 +92,18 @@ test('normalizeDirectConversation maps shell row without message body', () => {
   });
   assert.equal(Object.prototype.hasOwnProperty.call(row, 'message'), false);
   assert.equal(JSON.stringify(row).includes('secret body'), false);
+});
+
+test('normalizeDirectConversation avatarUrl is null when other has no avatar', () => {
+  const conversation = conversationFixture({
+    id: 10,
+    updatedAt: null,
+    unReadCount: 0,
+    people: [person(1, { username: 'alice' }), person(2, { username: 'bob' })],
+  });
+  const row = normalizeDirectConversation(conversation, 1);
+  assert.equal(row.avatarUrl, null);
+  assert.equal(row.title, 'bob');
 });
 
 test('findExactOneToOneConversation matches other recipient', () => {
