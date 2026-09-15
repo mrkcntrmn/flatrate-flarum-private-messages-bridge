@@ -11,7 +11,7 @@
         "dev": "webpack --mode development --watch",
         "build": "webpack --mode production",
         "format": "prettier --write src",
-        "test": "node tests/direct-message-entrypoints.test.mjs && node tests/dm001h-teaser-polling.test.mjs && node tests/direct-messaging-provider.test.js"
+        "test": "node tests/direct-message-entrypoints.test.mjs && node tests/dm001h-teaser-polling.test.mjs && node tests/direct-messaging-provider.test.js && node tests/direct-v2-surface.test.js"
     },
     "devDependencies": {
         "@flarum/prettier-config": "^1.0.0",

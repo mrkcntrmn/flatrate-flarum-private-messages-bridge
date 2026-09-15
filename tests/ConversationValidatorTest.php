@@ -4,6 +4,7 @@ namespace Neoncube\FlarumPrivateMessages\Tests;
 
 use Flarum\Foundation\ValidationException;
 use Flarum\User\User;
+use Neoncube\FlarumPrivateMessages\Tests\TestUsers;
 use Neoncube\FlarumPrivateMessages\ConversationValidator;
 use PHPUnit\Framework\TestCase;
 
@@ -11,13 +12,13 @@ class ConversationValidatorTest extends TestCase
 {
     private function actor(int $id = 7): User
     {
-        return new User($id);
+        return TestUsers::of($id);
     }
 
     private function validator(array $existingUsers = [12 => true]): ConversationValidator
     {
         return new ConversationValidator(function ($id) use ($existingUsers) {
-            return !empty($existingUsers[$id]) ? new User($id) : null;
+            return !empty($existingUsers[$id]) ? TestUsers::of($id) : null;
         });
     }
 
