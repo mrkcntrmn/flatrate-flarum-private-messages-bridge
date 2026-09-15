@@ -1,0 +1,51 @@
+name: CI
+
+on:
+  push:
+    branches: [main, 'feat/**', 'ci/**']
+  pull_request:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          tools: composer:v2
+          coverage: none
+          extensions: curl, dom, mbstring, openssl, pdo, tokenizer, xml, xmlwriter, zip
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: js/package-lock.json
+
+      - name: Composer validate
+        run: composer validate --no-check-publish --strict
+
+      - name: Install PHP dependencies
+        run: composer update --no-interaction --prefer-dist
+
+      - name: PHP syntax check
+        run: |
+          find src tests extend.php -type f -name '*.php' -print0 \
+            | xargs -0 -n1 php -l
+
+      - name: PHPUnit
+        run: vendor/bin/phpunit --colors=always
+
+      - name: JS install
+        working-directory: js
+        run: npm ci
+
+      - name: JS tests
+        working-directory: js
+        run: npm test
+
+      - name: Production build
+        working-directory: js
+        run: npm run build

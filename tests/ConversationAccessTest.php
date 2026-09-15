@@ -4,6 +4,7 @@ namespace Neoncube\FlarumPrivateMessages\Tests;
 
 use Flarum\User\Exception\PermissionDeniedException;
 use Flarum\User\User;
+use Neoncube\FlarumPrivateMessages\Tests\TestUsers;
 use Neoncube\FlarumPrivateMessages\Conversation;
 use Neoncube\FlarumPrivateMessages\ConversationAccess;
 use PHPUnit\Framework\TestCase;
@@ -13,7 +14,7 @@ class ConversationAccessTest extends TestCase
     public function testAssertParticipantDeniesGuest(): void
     {
         $access = new ConversationAccess();
-        $guest = new User(null);
+        $guest = TestUsers::of(null);
         $conversation = $this->conversationWithMembership([]);
 
         $this->expectException(PermissionDeniedException::class);
@@ -23,7 +24,7 @@ class ConversationAccessTest extends TestCase
     public function testAssertParticipantAllowsMember(): void
     {
         $access = new ConversationAccess();
-        $actor = new User(1);
+        $actor = TestUsers::of(1);
         $conversation = $this->conversationWithMembership([1, 2]);
 
         $access->assertParticipant($actor, $conversation);
@@ -33,7 +34,7 @@ class ConversationAccessTest extends TestCase
     public function testAssertParticipantDeniesNonMember(): void
     {
         $access = new ConversationAccess();
-        $actor = new User(3);
+        $actor = TestUsers::of(3);
         $conversation = $this->conversationWithMembership([1, 2]);
 
         // Document why get()-truthiness was unsafe: empty objects are truthy.
@@ -46,11 +47,11 @@ class ConversationAccessTest extends TestCase
 
     public function testRequireOneToOnePeerDerivesOtherParticipant(): void
     {
-        $peerUser = new User(2);
+        $peerUser = TestUsers::of(2);
         $access = new ConversationAccess(function ($id) use ($peerUser) {
             return (int) $id === 2 ? $peerUser : null;
         });
-        $actor = new User(1);
+        $actor = TestUsers::of(1);
         $conversation = $this->conversationWithMembership([1, 2]);
 
         $peer = $access->requireOneToOnePeer($actor, $conversation);
@@ -60,9 +61,9 @@ class ConversationAccessTest extends TestCase
     public function testRequireOneToOnePeerRejectsMalformedGroup(): void
     {
         $access = new ConversationAccess(function ($id) {
-            return new User($id);
+            return TestUsers::of($id);
         });
-        $actor = new User(1);
+        $actor = TestUsers::of(1);
         $conversation = $this->conversationWithMembership([1, 2, 3]);
 
         $this->expectException(PermissionDeniedException::class);
@@ -71,8 +72,8 @@ class ConversationAccessTest extends TestCase
 
     public function testClientSuppliedDestinationMustNotBypassPeerDerivation(): void
     {
-        $peerUser = new User(2);
-        $attackerChosen = new User(999);
+        $peerUser = TestUsers::of(2);
+        $attackerChosen = TestUsers::of(999);
         $access = new ConversationAccess(function ($id) use ($peerUser, $attackerChosen) {
             if ((int) $id === 2) {
                 return $peerUser;
@@ -83,7 +84,7 @@ class ConversationAccessTest extends TestCase
             return null;
         });
 
-        $actor = new User(1);
+        $actor = TestUsers::of(1);
         $conversation = $this->conversationWithMembership([1, 2]);
 
         // Even if a client posts userId=999, peer must be derived as 2.

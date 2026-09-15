@@ -3,6 +3,7 @@
 namespace Neoncube\FlarumPrivateMessages\Tests;
 
 use Flarum\User\User;
+use Neoncube\FlarumPrivateMessages\Tests\TestUsers;
 use Neoncube\FlarumPrivateMessages\ConversationUnreadAccounting;
 use PHPUnit\Framework\TestCase;
 
@@ -70,7 +71,7 @@ class ConversationUnreadAccountingTest extends TestCase
             1,
             ConversationUnreadAccounting::unreadCountForActor(
                 $this->conversationFixture([self::A => 0, self::B => 0], $this->withConversation($messages, 10)),
-                new User(self::A)
+                TestUsers::of(self::A)
             )
         );
     }
@@ -85,7 +86,7 @@ class ConversationUnreadAccountingTest extends TestCase
             )
         );
 
-        $this->assertSame(0, ConversationUnreadAccounting::unreadCountForActor($conversation, new User(null)));
+        $this->assertSame(0, ConversationUnreadAccounting::unreadCountForActor($conversation, TestUsers::of(null)));
         $this->assertSame(0, ConversationUnreadAccounting::unreadCountForActor($conversation, null));
     }
 
