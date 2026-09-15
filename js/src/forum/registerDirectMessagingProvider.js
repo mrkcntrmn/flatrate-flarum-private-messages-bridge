@@ -1,5 +1,6 @@
 import app from 'flarum/forum/app';
 import ConversationView from './components/ConversationView';
+import MessagesDirectConversationView from './components/MessagesDirectConversationView';
 import StartConversationModal from './components/StartConversationModal';
 import {
   findExactOneToOneConversation,
@@ -99,9 +100,17 @@ export default function registerDirectMessagingProvider() {
     resolveConversation,
     renderConversation({ key, context }) {
       const conversation = conversationByKey(key);
-      return (
-        <ConversationView conversation={conversation} initialDraft={context?.draft || context?.initialDraft || ''} />
-      );
+      const initialDraft = context?.draft || context?.initialDraft || '';
+      if (context?.presentationVersion === 2) {
+        return (
+          <MessagesDirectConversationView
+            key={key}
+            conversation={conversation}
+            initialDraft={initialDraft}
+          />
+        );
+      }
+      return <ConversationView conversation={conversation} initialDraft={initialDraft} />;
     },
     async findConversationWithUser(user) {
       const targetId = typeof user?.id === 'function' ? user.id() : user?.id;
