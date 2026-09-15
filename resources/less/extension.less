@@ -824,6 +824,12 @@
   min-height: 44px;
 }
 
+// Flarum core hides icons on primary buttons; keep the paper-plane visible.
+.MessagesDirectSurface .DirectComposer .MessagesComposer-send.Button--icon .Button-icon,
+.MessagesDirectSurface .MessagesComposer .MessagesComposer-send.Button--icon .Button-icon {
+  display: inline-block;
+}
+
 .MessagesDirectSurface .MessagesJumpToLatest {
   flex: 0 0 auto;
   align-self: center;

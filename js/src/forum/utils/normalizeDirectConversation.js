@@ -58,6 +58,15 @@ export function participantTitle(user) {
   return readAttr(user, 'displayName') || readAttr(user, 'username') || readAttr(user, 'nickname') || '';
 }
 
+/** Public Flarum User model accessor only. */
+export function participantAvatarUrl(user) {
+  if (!user) {
+    return null;
+  }
+  const url = readAttr(user, 'avatarUrl');
+  return typeof url === 'string' && url.length ? url : null;
+}
+
 export function activityAtIso(conversation) {
   if (!conversation || typeof conversation.updatedAt !== 'function') {
     return null;
@@ -107,6 +116,7 @@ export function normalizeDirectConversation(conversation, actorId) {
     kind: 'direct',
     key: String(conversationId),
     title: participantTitle(other),
+    avatarUrl: participantAvatarUrl(other),
     activityAt: activityAtIso(conversation),
     unreadCount: unread || 0,
     isPublic: false,

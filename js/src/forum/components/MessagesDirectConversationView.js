@@ -301,14 +301,12 @@ export default class MessagesDirectConversationView extends Component {
         />
         <Button
           type="submit"
-          className="Button Button--primary MessagesComposer-send"
+          className="Button Button--icon Button--primary MessagesComposer-send"
+          icon="fas fa-paper-plane"
           disabled={!this.canSend()}
           loading={this.isSending}
-        >
-          {this.sendFailed
-            ? app.translator.trans('neoncube-private-messages.forum.chat.send') || 'Retry'
-            : app.translator.trans('neoncube-private-messages.forum.chat.send')}
-        </Button>
+          aria-label={this.sendFailed ? 'Retry' : 'Send message'}
+        />
       </form>
     );
   }
