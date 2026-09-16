@@ -101,6 +101,21 @@ test('send failure preserves draft path in source', () => {
   assert.match(v2, /this\.isSending\s*=\s*true/);
 });
 
+test('Direct V2 own groups show avatar and nickname via canonical author', () => {
+  const v2 = readFileSync(join(JS_SRC, 'components/MessagesDirectConversationView.js'), 'utf8');
+  assert.match(v2, /authorForMessage\s*\(message\)\s*\{/);
+  assert.match(v2, /app\.session\.user/);
+  assert.match(v2, /MessagesBubble-avatar/);
+  assert.match(v2, /MessagesBubble-name/);
+  assert.match(v2, /avatar\(author\)/);
+  assert.match(v2, /username\(author\)/);
+  // Identity must not be gated behind !own.
+  assert.doesNotMatch(v2, /!own\s*\?\s*<span className="MessagesBubble-avatar"/);
+  assert.doesNotMatch(v2, /!own\s*\?\s*<span className="MessagesBubble-name"/);
+  assert.match(v2, /MessagesMessageGroup--out/);
+  assert.match(v2, /MessagesMessageGroup--in/);
+});
+
 test('V2 composer send is icon-only paper plane with aria-label', () => {
   const v2 = readFileSync(join(JS_SRC, 'components/MessagesDirectConversationView.js'), 'utf8');
   assert.match(v2, /icon="fas fa-paper-plane"/);
