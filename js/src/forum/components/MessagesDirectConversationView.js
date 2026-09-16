@@ -161,6 +161,18 @@ export default class MessagesDirectConversationView extends Component {
     return parseInt(message.user().id(), 10) === parseInt(app.session.user.id(), 10);
   }
 
+  /**
+   * Canonical author for Direct group identity (avatar + nickname).
+   * Own groups use the session user so presentation stays consistent.
+   */
+  authorForMessage(message) {
+    if (!message) return null;
+    if (this.isOwnMessage(message) && app.session.user) {
+      return app.session.user;
+    }
+    return message.user();
+  }
+
   maybeInitialScroll() {
     const key = this.conversationKey();
     const messages = this.sortedMessages();
@@ -238,6 +250,7 @@ export default class MessagesDirectConversationView extends Component {
           const first = index === 0;
           const last = index === group.messages.length - 1;
           const own = group.own;
+          const author = this.authorForMessage(message);
           return (
             <div
               key={this.messageCacheKey(message)}
@@ -250,8 +263,8 @@ export default class MessagesDirectConversationView extends Component {
             >
               {first ? (
                 <div className="MessagesBubble-meta">
-                  {!own ? <span className="MessagesBubble-avatar">{avatar(message.user())}</span> : null}
-                  {!own ? <span className="MessagesBubble-name">{username(message.user())}</span> : null}
+                  <span className="MessagesBubble-avatar">{avatar(author)}</span>
+                  <span className="MessagesBubble-name">{username(author)}</span>
                   <time className="MessagesBubble-time">{humanTime(message.createdAt())}</time>
                 </div>
               ) : null}
