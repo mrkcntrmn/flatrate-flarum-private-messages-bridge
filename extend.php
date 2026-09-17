@@ -18,6 +18,7 @@ return [
     (new Extend\Frontend('forum'))
         ->js(__DIR__ . '/js/dist/forum.js')
         ->css(__DIR__ . '/resources/less/extension.less')
+        ->css(__DIR__ . '/resources/less/messages-v2-bubbles.less')
         ->route('/conversations/{id}', 'neoncube-private-messages.messages')
         ->route('/conversations', 'neoncube-private-messages.conversations'),
     new Extend\Locales(__DIR__ . '/resources/locale'),
