@@ -1,0 +1,114 @@
+// FORUM-MESSAGING-009UI — Direct Messages bubble presentation.
+// Mirrors the Live Messages V2 palette/geometry while keeping Direct's
+// existing authoritative recipient read-position checkmark.
+
+.MessagesDirectSurface {
+  .MessagesMessageGroup {
+    width: 100%;
+  }
+
+  // The first bubble owns the group metadata. Let that wrapper span the
+  // conversation width so the timestamp can be centered independently of the
+  // bubble width and sender identity.
+  .MessagesBubble.is-first {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .MessagesBubble.is-first .MessagesBubble-meta {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    align-items: center;
+    width: 100%;
+    gap: 6px;
+  }
+
+  .MessagesMessageGroup--out .MessagesBubble-meta {
+    flex-direction: initial;
+    justify-content: initial;
+  }
+
+  .MessagesBubble-meta .MessagesBubble-avatar {
+    grid-column: 1;
+    grid-row: 1;
+    justify-self: start;
+  }
+
+  .MessagesMessageGroup--in .MessagesBubble-meta .MessagesBubble-name {
+    grid-column: 1;
+    grid-row: 1;
+    justify-self: start;
+    min-width: 0;
+    max-width: 100%;
+    margin-left: 26px;
+  }
+
+  .MessagesBubble-meta .MessagesBubble-time {
+    grid-column: 2;
+    grid-row: 1;
+    justify-self: center;
+    text-align: center;
+  }
+
+  // The signed-in user's own identity is implicit from right alignment and
+  // bubble color; do not repeat their avatar/nickname on their messages.
+  .MessagesMessageGroup--out .MessagesBubble-avatar,
+  .MessagesMessageGroup--out .MessagesBubble-name {
+    display: none;
+  }
+
+  .MessagesMessageGroup--in .MessagesBubble.is-first .MessagesBubble-row {
+    margin-right: auto;
+    max-width: 82%;
+  }
+
+  .MessagesMessageGroup--out .MessagesBubble.is-first .MessagesBubble-row {
+    margin-left: auto;
+    max-width: 82%;
+  }
+
+  // Shared bubble palette with Live/group chat.
+  .MessagesBubble--in .MessagesBubble-body,
+  .MessagesBubble--in .message-text {
+    background: #e9e9eb;
+    color: #111111;
+  }
+
+  .MessagesBubble--out .MessagesBubble-body,
+  .MessagesBubble--out .message-text {
+    background: #0a84ff;
+    color: #ffffff;
+  }
+
+  .MessagesBubble--in .MessagesBubble-body a,
+  .MessagesBubble--in .message-text a,
+  .MessagesBubble--out .MessagesBubble-body a,
+  .MessagesBubble--out .message-text a {
+    color: inherit;
+  }
+
+  // Direct-only read receipt: the existing checkmark is rendered only when
+  // the other participant's lastRead covers the last outgoing message. Move it
+  // below the bubble instead of placing it inline beside the message body.
+  .MessagesBubble--out.is-last .MessagesBubble-row {
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 3px;
+  }
+
+  .MessagesBubble-read {
+    display: block;
+    align-self: flex-end;
+    margin: 0 2px 0 0;
+    color: #0a84ff;
+    font-size: 11px;
+    line-height: 1;
+  }
+}
+
+@media (min-width: @screen-tablet) {
+  .MessagesDirectSurface .MessagesMessageGroup--in .MessagesBubble.is-first .MessagesBubble-row,
+  .MessagesDirectSurface .MessagesMessageGroup--out .MessagesBubble.is-first .MessagesBubble-row {
+    max-width: 76%;
+  }
+}
