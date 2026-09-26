@@ -16,6 +16,20 @@ assert.match(less, /\.MessagesBubble--out \.MessagesBubble-body,[\s\S]*?backgrou
 assert.match(less, /\.MessagesBubble--out\.is-last \.MessagesBubble-row\s*\{[\s\S]*?flex-direction:\s*column;[\s\S]*?align-items:\s*flex-end;/);
 assert.match(less, /\.MessagesBubble-read\s*\{[\s\S]*?color:\s*#0a84ff;/);
 
+// Own Direct bubbles must actually right-justify (inline-flex ignores margin:auto).
+assert.match(
+  less,
+  /\.MessagesMessageGroup--out \.MessagesBubble\.is-first \.MessagesBubble-row\s*\{[\s\S]*?display:\s*flex;[\s\S]*?width:\s*fit-content;[\s\S]*?margin-left:\s*auto;/
+);
+assert.match(
+  less,
+  /\.MessagesMessageGroup--in \.MessagesBubble\.is-first \.MessagesBubble-row\s*\{[\s\S]*?display:\s*flex;[\s\S]*?width:\s*fit-content;[\s\S]*?margin-right:\s*auto;/
+);
+assert.match(
+  less,
+  /\.MessagesMessageGroup--out \.MessagesBubble:not\(\.is-first\)\s*\{[\s\S]*?align-self:\s*flex-end;[\s\S]*?width:\s*fit-content;/
+);
+
 // Read receipt remains Direct-only and authoritative: render only when the
 // recipient's lastRead covers the last outgoing message, using the existing
 // realtime readMessage update path.
