@@ -57,13 +57,33 @@
     display: none;
   }
 
+  // Bubble rows are `inline-flex` by default; horizontal `margin: auto` is
+  // ignored on inline-level boxes, so own messages stayed left under the
+  // full-width metadata wrapper. Force flex + fit-content so edge pinning works.
   .MessagesMessageGroup--in .MessagesBubble.is-first .MessagesBubble-row {
+    display: flex;
+    width: fit-content;
     margin-right: auto;
     max-width: 82%;
   }
 
   .MessagesMessageGroup--out .MessagesBubble.is-first .MessagesBubble-row {
+    display: flex;
+    width: fit-content;
     margin-left: auto;
+    max-width: 82%;
+  }
+
+  // Follow-on bubbles in a group have no metadata row; keep them edge-pinned.
+  .MessagesMessageGroup--in .MessagesBubble:not(.is-first) {
+    align-self: flex-start;
+    width: fit-content;
+    max-width: 82%;
+  }
+
+  .MessagesMessageGroup--out .MessagesBubble:not(.is-first) {
+    align-self: flex-end;
+    width: fit-content;
     max-width: 82%;
   }
 
