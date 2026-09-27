@@ -65,6 +65,9 @@
     "test": "phpunit"
   },
   "extra": {
+    "branch-alias": {
+      "dev-main": "1.x-dev"
+    },
     "flarum-extension": {
       "title": "Private Messages \u2014 FlatRate Bridge",
       "icon": {

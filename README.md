@@ -17,20 +17,30 @@ Derived from [`neoncube/flarum-private-messages`](https://github.com/neoncube2/f
 
 - Composer: `flatrate/flarum-private-messages-bridge`
 - Flarum extension ID: `flatrate-private-messages-bridge`
+- Requires PHP `^8.1` and `flarum/core` `^1.8.19` (Flarum 1.x)
 
 ## Installation
 
 Do not install alongside `neoncube/flarum-private-messages` (Composer `conflict`).
 
+`1.1.0` is **not published on Packagist yet**. Until it is, install the tagged release from GitHub:
+
 ```bash
 composer remove kyrne/whisper --no-update
 composer remove littlecxm/whisper --no-update
-composer require flatrate/flarum-private-messages-bridge:1.0.0
+composer config repositories.flatrate-private-messages-bridge vcs https://github.com/mrkcntrmn/flatrate-flarum-private-messages-bridge
+composer require flatrate/flarum-private-messages-bridge:1.1.0
 php flarum migrate
 php flarum cache:clear
 ```
 
-Prefer an exact version pin in production. Do not use `*`, `^1.0`, `dev-*`, or a raw Git branch for production.
+**After Packagist publication:** once `1.1.0` is available on Packagist, you can install without the VCS repository entry:
+
+```bash
+composer require flatrate/flarum-private-messages-bridge:1.1.0
+```
+
+Prefer an exact version pin in production. Do not use `*`, `^1.1`, `dev-*`, or a raw Git branch for production.
 
 ## Updating
 
