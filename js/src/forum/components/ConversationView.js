@@ -363,15 +363,7 @@ export default class ConversationView extends Component {
                       );
                     })
                   : ''}
-                {this.messageContent() ? (
-                  <li className="message-content my-message message-preview">
-                    <div className="message-text-and-indicators">
-                      <MessageText content={this.messageContent()} preview={true} />
-                    </div>
-                  </li>
-                ) : (
-                  ''
-                )}
+                {/* Unsent drafts remain in the composer. No message bubble until Send. */}
                 {this.typing ? (
                   <li>
                     <div className="tiblock">
