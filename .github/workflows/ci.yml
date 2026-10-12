@@ -27,6 +27,12 @@ jobs:
       - name: Composer validate
         run: composer validate --no-check-publish --strict
 
+      # Flarum 1.8.19 pins Flysystem 1.x. Match the narrowly-scoped
+      # advisory exception already used by the owned Live Chat CI.
+      # This is a CI dependency-resolution exception, not a safety sign-off.
+      - name: Allow pinned Flarum 1.8.19 Flysystem advisories
+        run: composer config --global --json policy.advisories.ignore-id '["PKSA-w9tt-7782-78jx","PKSA-pwh8-d4fr-nywn"]'
+
       - name: Install PHP dependencies
         run: composer update --no-interaction --prefer-dist
 
