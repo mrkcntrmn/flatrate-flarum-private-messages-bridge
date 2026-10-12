@@ -141,3 +141,16 @@ test('Direct V2 LESS keeps primary icon-send Button-icon visible', () => {
 
 await Promise.all(pending);
 console.error('MESSAGING002_DIRECT_V2=PASS');
+
+test('NO-PREVIEW: Direct V1 and V2 must not render unsent composer text as message bubbles', () => {
+  const legacy = readFileSync(join(JS_SRC, 'components/ConversationView.js'), 'utf8');
+  const v2 = readFileSync(join(JS_SRC, 'components/MessagesDirectConversationView.js'), 'utf8');
+  const less = readFileSync(join(ROOT, 'resources/less/extension.less'), 'utf8');
+  assert.doesNotMatch(legacy, /message-preview|preview=\\{true\\}|<MessageText content=\\{this\\.messageContent\\(\\)\\}/);
+  assert.doesNotMatch(v2, /message-preview|preview=\\{true\\}|<MessageText[^>]+messageContent/);
+  assert.doesNotMatch(less, /\\.message-preview/);
+  assert.match(legacy, /value=\\{this\\.messageContent\\(\\)\\}/);
+  assert.match(v2, /value=\\{this\\.messageContent\\(\\)\\}/);
+  assert.match(legacy, /<MessageText content=\\{message\\.message\\(\\)\\}/);
+  assert.match(v2, /<MessageText[^>]+content=\\{message\\.message\\(\\)\\}/);
+});
