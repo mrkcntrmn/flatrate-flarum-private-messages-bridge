@@ -12,6 +12,10 @@ use Neoncube\FlarumPrivateMessages\Api\Serializers\ConversationRecipientSerializ
 use Neoncube\FlarumPrivateMessages\Api\Serializers\MessageSerializer;
 use Neoncube\FlarumPrivateMessages\Notifications\NewPrivateMessageBlueprint;
 
+if (!class_exists(\Flarum\Api\Controller\AbstractShowController::class)) {
+    return require __DIR__.'/extend-f2.php';
+}
+
 return [
     (new Extend\Frontend('admin'))
         ->js(__DIR__ . '/js/dist/admin.js'),

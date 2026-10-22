@@ -1,0 +1,39 @@
+<?php
+
+namespace Neoncube\FlarumPrivateMessages\Tests;
+
+use Neoncube\FlarumPrivateMessages\F2\ConversationVisibility;
+use PHPUnit\Framework\TestCase;
+
+class ConversationVisibilityTest extends TestCase
+{
+    public function testOnlyParticipantIdsAreVisible(): void
+    {
+        $rows = [
+            ['id' => 10, 'participants' => [1, 2]],
+            ['id' => 11, 'participants' => [2, 3]],
+            ['id' => 12, 'participants' => [4]],
+        ];
+
+        $this->assertSame([], ConversationVisibility::visibleIds(null, $rows));
+        $this->assertSame([10], ConversationVisibility::visibleIds(1, $rows));
+        $this->assertSame([11], ConversationVisibility::visibleIds(3, $rows));
+        $this->assertSame([], ConversationVisibility::visibleIds(9, $rows));
+    }
+
+    public function testF2EntryOmitsEmailRealtimeAndClientUsername(): void
+    {
+        $extend = (string) file_get_contents(dirname(__DIR__).'/extend.php');
+        $f2 = (string) file_get_contents(dirname(__DIR__).'/extend-f2.php');
+        $actions = (string) file_get_contents(dirname(__DIR__).'/src/F2/ParticipantActions.php');
+
+        $this->assertStringContainsString('AbstractShowController::class', $extend);
+        $this->assertStringContainsString('extend-f2.php', $extend);
+        $this->assertStringNotContainsString('Extend\\Notification', $f2);
+        $this->assertStringNotContainsString('/messages/typing', $f2);
+        $this->assertStringNotContainsString('Frontend', $f2);
+        $this->assertStringContainsString("where('user_id', \$actor->id)", $actions);
+        $this->assertStringContainsString('assertParticipantInConversationId', $actions);
+        $this->assertStringNotContainsString('body[\'username\']', $actions);
+    }
+}

@@ -8,12 +8,20 @@ on:
 jobs:
   validate:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - php: '8.2'
+            lane: f1
+          - php: '8.4'
+            lane: f2
     steps:
       - uses: actions/checkout@v4
 
       - uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.2'
+          php-version: ${{ matrix.php }}
           tools: composer:v2
           coverage: none
           extensions: curl, dom, mbstring, openssl, pdo, tokenizer, xml, xmlwriter, zip
@@ -27,12 +35,25 @@ jobs:
       - name: Composer validate
         run: composer validate --no-check-publish --strict
 
+      - name: Allow Flarum 1 flysystem advisories
+        if: matrix.lane == 'f1'
+        run: composer config --global --json policy.advisories.ignore-id '["PKSA-w9tt-7782-78jx","PKSA-pwh8-d4fr-nywn"]'
+
       - name: Install PHP dependencies
         run: composer update --no-interaction --prefer-dist
 
+      - name: Assert resolved Flarum core
+        run: |
+          if [ "${{ matrix.lane }}" = "f2" ]; then
+            composer show flarum/core | grep -E '^versions\s+:\s+\* v2\.0\.2$'
+            composer show league/flysystem | grep -E '^versions\s+:\s+\* 3\.'
+          else
+            composer show flarum/core | grep -E '^versions\s+:\s+\* v1\.8\.'
+          fi
+
       - name: PHP syntax check
         run: |
-          find src tests extend.php -type f -name '*.php' -print0 \
+          find src tests extend.php extend-f2.php -type f -name '*.php' -print0 \
             | xargs -0 -n1 php -l
 
       - name: PHPUnit
