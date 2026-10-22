@@ -25,7 +25,13 @@ class ConversationVisibilityTest extends TestCase
     {
         $extend = (string) file_get_contents(dirname(__DIR__).'/extend.php');
         $f2 = (string) file_get_contents(dirname(__DIR__).'/extend-f2.php');
-        $actions = (string) file_get_contents(dirname(__DIR__).'/src/F2/ParticipantActions.php');
+        $actions = '';
+        foreach (glob(dirname(__DIR__).'/src/F2/*.php') as $file) {
+            $actions .= (string) file_get_contents($file);
+        }
+        $this->assertFileDoesNotExist(dirname(__DIR__).'/src/F2/ParticipantActions.php');
+        $this->assertStringContainsString('$message->message', $actions);
+        $this->assertStringNotContainsString('$message->content', $actions);
 
         $this->assertStringContainsString('AbstractShowController::class', $extend);
         $this->assertStringContainsString('extend-f2.php', $extend);
@@ -35,5 +41,7 @@ class ConversationVisibilityTest extends TestCase
         $this->assertStringContainsString("where('user_id', \$actor->id)", $actions);
         $this->assertStringContainsString('assertParticipantInConversationId', $actions);
         $this->assertStringNotContainsString('body[\'username\']', $actions);
+        $this->assertStringContainsString('RequestUtil::getActor($request)', $actions);
+        $this->assertStringNotContainsString("getAttribute('actor')", $actions);
     }
 }
