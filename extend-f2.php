@@ -3,6 +3,8 @@
 /*
  * Flarum 2.0.2 backend for the private-message bridge.
  *
+ * Native Flarum messages store dialogs, not these conversation rows, so this
+ * bridge remains the reader for the historical private-message tables.
  * Browser assets, email notifications, and the Pusher typing route stay
  * unregistered. Authorization still requires a participant row.
  */

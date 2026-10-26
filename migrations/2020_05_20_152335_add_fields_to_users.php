@@ -9,7 +9,7 @@ return [
             return;
 
         $schema->table('users', function (Blueprint $table) {
-            $table->addColumn('integer', 'unread_messages'/*, $options*/);
+            $table->integer('unread_messages')->default(0);
         });
     },
     'down' => function (Builder $schema) {

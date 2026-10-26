@@ -70,3 +70,18 @@ jobs:
       - name: Production build
         working-directory: js
         run: npm run build
+
+  flarum-f2-http:
+    name: Flarum 2.0.2 private-message HTTP
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          tools: composer:v2
+          coverage: none
+          extensions: curl, dom, fileinfo, gd, mbstring, openssl, pdo, pdo_sqlite, tokenizer, xml, xmlwriter, zip
+      - name: Disposable Flarum 2 HTTP acceptance
+        run: bash scripts/ci-flarum-f2-http.sh

@@ -25,6 +25,7 @@ class Conversation extends AbstractModel
         $conversation = new static;
 
         $conversation->created_at = Carbon::now();
+        $conversation->total_messages = 0;
 
         return $conversation;
     }

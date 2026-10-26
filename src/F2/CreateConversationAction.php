@@ -2,6 +2,7 @@
 
 namespace Neoncube\FlarumPrivateMessages\F2;
 
+use Flarum\Foundation\ValidationException;
 use Flarum\User\Exception\PermissionDeniedException;
 use Illuminate\Contracts\Bus\Dispatcher as BusDispatcher;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -35,7 +36,13 @@ final class CreateConversationAction extends ParticipantAction
         }
 
         $data = Arr::get($request->getParsedBody(), 'data', []);
-        $conversation = $this->bus->dispatch(new StartConversation($actor, is_array($data) ? $data : []));
+        try {
+            $conversation = $this->bus->dispatch(new StartConversation($actor, is_array($data) ? $data : []));
+        } catch (PermissionDeniedException $e) {
+            return $this->denied(403, 'permission_denied');
+        } catch (ValidationException $e) {
+            return $this->denied(422, 'validation_error');
+        }
 
         return new JsonResponse([
             'data' => ['type' => 'conversations', 'id' => (string) $conversation->id],
