@@ -35,7 +35,7 @@ assert.match(
 // realtime readMessage update path.
 assert.match(view, /parseInt\(this\.recipient\.lastRead\(\), 10\)\s*>=\s*parseInt\(message\.data\.attributes\.number, 10\)/);
 assert.match(view, /className="MessagesBubble-read"/);
-assert.match(view, /icon\('fas fa-check'\)/);
+assert.match(view, /<Icon name="fas fa-check"/);
 assert.match(view, /channels\.user\.bind\('readMessage'/);
 
 console.log('FORUM-MESSAGING-009UI Direct bubble/read receipt contract: PASS');

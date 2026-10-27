@@ -107,7 +107,7 @@ test('Direct V2 own groups show avatar and nickname via canonical author', () =>
   assert.match(v2, /app\.session\.user/);
   assert.match(v2, /MessagesBubble-avatar/);
   assert.match(v2, /MessagesBubble-name/);
-  assert.match(v2, /avatar\(author\)/);
+  assert.match(v2, /<Avatar user=\{author\}/);
   assert.match(v2, /username\(author\)/);
   // Identity must not be gated behind !own.
   assert.doesNotMatch(v2, /!own\s*\?\s*<span className="MessagesBubble-avatar"/);

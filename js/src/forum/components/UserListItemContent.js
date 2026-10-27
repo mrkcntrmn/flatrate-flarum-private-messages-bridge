@@ -1,5 +1,5 @@
 import Component from 'flarum/common/Component';
-import avatar from 'flarum/common/helpers/avatar';
+import Avatar from 'flarum/common/components/Avatar';
 import username from 'flarum/common/helpers/username';
 import userOnline from 'flarum/common/helpers/userOnline';
 
@@ -22,7 +22,7 @@ export default class UserListItemContent extends Component {
 
     return (
       <div className="UserListItem-content">
-        {avatar(user)}
+        <Avatar user={user} />
 
         <div className="info">
           {username(user)}

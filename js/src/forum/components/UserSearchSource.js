@@ -1,5 +1,5 @@
 import highlight from 'flarum/common/helpers/highlight';
-import avatar from 'flarum/common/helpers/avatar';
+import Avatar from 'flarum/common/components/Avatar';
 import username from 'flarum/common/helpers/username';
 
 export default class UserSearchSource {
@@ -30,7 +30,7 @@ export default class UserSearchSource {
           return (
             <li className="SearchResult" data-index={user.id()}>
               <a data-index={'users:' + user.id()}>
-                {avatar(user)}
+                <Avatar user={user} />
                 {name}
               </a>
             </li>

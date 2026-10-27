@@ -1,10 +1,10 @@
 import Component from 'flarum/common/Component';
 import Button from 'flarum/common/components/Button';
 import LoadingIndicator from 'flarum/common/components/LoadingIndicator';
-import avatar from 'flarum/common/helpers/avatar';
+import Avatar from 'flarum/common/components/Avatar';
+import Icon from 'flarum/common/components/Icon';
 import username from 'flarum/common/helpers/username';
 import humanTime from 'flarum/common/helpers/humanTime';
-import icon from 'flarum/common/helpers/icon';
 import Stream from 'flarum/common/utils/Stream';
 import withAttr from 'flarum/common/utils/withAttr';
 import app from 'flarum/forum/app';
@@ -263,7 +263,7 @@ export default class MessagesDirectConversationView extends Component {
             >
               {first ? (
                 <div className="MessagesBubble-meta">
-                  <span className="MessagesBubble-avatar">{avatar(author)}</span>
+                  <span className="MessagesBubble-avatar"><Avatar user={author} /></span>
                   <span className="MessagesBubble-name">{username(author)}</span>
                   <time className="MessagesBubble-time">{humanTime(message.createdAt())}</time>
                 </div>
@@ -276,7 +276,7 @@ export default class MessagesDirectConversationView extends Component {
                       className="MessagesBubble-read"
                       title={app.translator.trans('neoncube-private-messages.forum.chat.message_read')}
                     >
-                      {icon('fas fa-check')}
+                      <Icon name="fas fa-check" />
                     </span>
                   ) : null
                 ) : null}

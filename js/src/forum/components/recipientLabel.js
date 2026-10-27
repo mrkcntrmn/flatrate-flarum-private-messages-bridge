@@ -1,5 +1,5 @@
 import extract from 'flarum/common/utils/extract';
-import avatar from 'flarum/common/helpers/avatar';
+import Avatar from 'flarum/common/components/Avatar';
 import username from 'flarum/common/helpers/username';
 
 export default function recipientLabel(recipient, attrs = {}) {
@@ -12,7 +12,7 @@ export default function recipientLabel(recipient, attrs = {}) {
     link ? 'a' : 'span',
     attrs,
     <span className="RecipientLabel-text">
-      {avatar(recipient)}
+      <Avatar user={recipient} />
       {username(recipient)}
     </span>
   );

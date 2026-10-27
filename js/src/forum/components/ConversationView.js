@@ -1,13 +1,13 @@
 import Component from 'flarum/common/Component';
 import Button from 'flarum/common/components/Button';
-import avatar from 'flarum/common/helpers/avatar';
+import Avatar from 'flarum/common/components/Avatar';
+import Icon from 'flarum/common/components/Icon';
 import username from 'flarum/common/helpers/username';
 import humanTime from 'flarum/common/helpers/humanTime';
 import LoadingIndicator from 'flarum/common/components/LoadingIndicator';
 import MessageText from './MessageText';
 import Stream from 'flarum/common/utils/Stream';
 import withAttr from 'flarum/common/utils/withAttr';
-import icon from 'flarum/common/helpers/icon';
 import app from 'flarum/forum/app';
 
 const POLL_INTERVAL_MS = 5000;
@@ -308,7 +308,7 @@ export default class ConversationView extends Component {
     return (
       <div className="chat">
         <div className="chat-header">
-          {avatar(this.user)}
+          <Avatar user={this.user} />
 
           <div className="chat-about">
             <div className="chat-with">
@@ -341,7 +341,7 @@ export default class ConversationView extends Component {
                         <li className={'message-content ' + (myMessage ? 'my-message' : 'other-message')}>
                           <div className="message-data">
                             <div className="avatar-inline">
-                              {avatar(myMessage ? app.session.user : message.user())}
+                              <Avatar user={myMessage ? app.session.user : message.user()} />
                             </div>
                             <span className="message-data-name">{username(myMessage ? app.session.user : message.user())}</span>
                             <span className="message-data-time">{humanTime(message.createdAt())}</span>
@@ -351,7 +351,7 @@ export default class ConversationView extends Component {
                             <MessageText content={message.message()} />
                             {myMessage ? (
                               parseInt(this.recipient.lastRead()) >= parseInt(message.data.attributes.number) ? (
-                                <span className="message-read" title={app.translator.trans('neoncube-private-messages.forum.chat.message_read')}>{icon('fas fa-check')}</span>
+                                <span className="message-read" title={app.translator.trans('neoncube-private-messages.forum.chat.message_read')}><Icon name="fas fa-check" /></span>
                               ) : (
                                 ''
                               )
