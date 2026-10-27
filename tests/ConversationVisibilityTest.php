@@ -37,7 +37,11 @@ class ConversationVisibilityTest extends TestCase
         $this->assertStringContainsString('extend-f2.php', $extend);
         $this->assertStringNotContainsString('Extend\\Notification', $f2);
         $this->assertStringNotContainsString('/messages/typing', $f2);
-        $this->assertStringNotContainsString('Frontend', $f2);
+        $this->assertStringContainsString("js(__DIR__.'/js/dist/forum-f2.js')", $f2);
+        $this->assertStringContainsString('forum-f2.js', $f2);
+        $this->assertFileExists(dirname(__DIR__).'/js/dist/forum-f2.js');
+        $this->assertStringContainsString("new Extend\\Locales(__DIR__.'/resources/locale')", $f2);
+        $this->assertStringContainsString("(new Extend\\Routes('api'))", $f2);
         $this->assertStringContainsString("where('user_id', \$actor->id)", $actions);
         $this->assertStringContainsString('assertParticipantInConversationId', $actions);
         $this->assertStringNotContainsString('body[\'username\']', $actions);
