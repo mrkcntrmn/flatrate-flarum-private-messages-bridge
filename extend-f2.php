@@ -10,16 +10,18 @@
  * unregistered. Authorization still requires a participant row.
  */
 
-use Flarum\Api\Serializer\CurrentUserSerializer;
-use Flarum\Api\Serializer\ForumSerializer;
+use Flarum\Api\Resource\ForumResource;
+use Flarum\Api\Resource\UserResource;
 use Flarum\Extend;
 use Neoncube\FlarumPrivateMessages\F2\CreateConversationAction;
 use Neoncube\FlarumPrivateMessages\F2\CreateMessageAction;
 use Neoncube\FlarumPrivateMessages\F2\DeleteMessageAction;
+use Neoncube\FlarumPrivateMessages\F2\ForumResourceFields;
 use Neoncube\FlarumPrivateMessages\F2\ListConversationsAction;
 use Neoncube\FlarumPrivateMessages\F2\ListMessagesAction;
 use Neoncube\FlarumPrivateMessages\F2\ReadMessageAction;
 use Neoncube\FlarumPrivateMessages\F2\ShowConversationAction;
+use Neoncube\FlarumPrivateMessages\F2\UserResourceFields;
 
 return [
     (new Extend\Frontend('forum'))
@@ -38,18 +40,11 @@ return [
         ->delete('/neoncube-private-messages/messages/{id}', 'neoncube-private-messages.messages.delete', DeleteMessageAction::class)
         ->get('/neoncube-private-messages/conversations/{id}', 'neoncube-private-messages.conversations.show', ShowConversationAction::class),
 
-    (new Extend\ApiSerializer(ForumSerializer::class))
-        ->attribute('canMessage', function (ForumSerializer $serializer) {
-            return $serializer->getActor()->can('startConversation');
-        })
-        ->attribute('neoncubePrivateMessagesAllowUsersToReceiveEmailNotifications', function (ForumSerializer $serializer) {
-            return $serializer->getActor()->can('neoncube-private-messages.allowUsersToReceiveEmailNotifications');
-        }),
+    (new Extend\ApiResource(ForumResource::class))
+        ->fields(ForumResourceFields::class),
 
-    (new Extend\ApiSerializer(CurrentUserSerializer::class))
-        ->attribute('unreadMessages', function (CurrentUserSerializer $serializer) {
-            return $serializer->getActor()->unread_messages;
-        }),
+    (new Extend\ApiResource(UserResource::class))
+        ->fields(UserResourceFields::class),
 
     (new Extend\Settings())
         ->serializeToForum('neoncubePrivateMessagesInitialInstalledVersion', 'neoncube-private-messages.initial_installed_version', function ($value) {
