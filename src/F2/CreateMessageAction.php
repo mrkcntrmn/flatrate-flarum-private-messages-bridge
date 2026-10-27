@@ -48,9 +48,16 @@ final class CreateMessageAction extends ParticipantAction
         }
 
         $message = $this->bus->dispatch(new NewMessage($actor, $data, $conversationId));
+        $message->loadMissing('user');
 
-        return new JsonResponse([
-            'data' => ['type' => 'messages', 'id' => (string) $message->id],
-        ], 201, ['Cache-Control' => 'private, no-store']);
+        $payload = [
+            'data' => MessageJson::resource($message),
+        ];
+        $userDoc = MessageJson::includedUser($message->user);
+        if ($userDoc !== null) {
+            $payload['included'] = [$userDoc];
+        }
+
+        return new JsonResponse($payload, 201, ['Cache-Control' => 'private, no-store']);
     }
 }

@@ -38,8 +38,10 @@ final class ShowConversationAction extends ParticipantAction
             return $this->denied(403, 'permission_denied');
         }
 
-        return new JsonResponse([
-            'data' => ['type' => 'conversations', 'id' => (string) $conversation->id],
-        ], 200, ['Cache-Control' => 'private, no-store']);
+        return new JsonResponse(
+            ConversationJson::document($conversation, $actor),
+            200,
+            ['Cache-Control' => 'private, no-store']
+        );
     }
 }

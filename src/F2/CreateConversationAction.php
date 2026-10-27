@@ -44,8 +44,10 @@ final class CreateConversationAction extends ParticipantAction
             return $this->denied(422, 'validation_error');
         }
 
-        return new JsonResponse([
-            'data' => ['type' => 'conversations', 'id' => (string) $conversation->id],
-        ], 201, ['Cache-Control' => 'private, no-store']);
+        return new JsonResponse(
+            ConversationJson::document($conversation, $actor),
+            201,
+            ['Cache-Control' => 'private, no-store']
+        );
     }
 }

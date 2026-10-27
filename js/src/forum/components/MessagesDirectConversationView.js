@@ -157,8 +157,31 @@ export default class MessagesDirectConversationView extends Component {
       .sort((a, b) => a.createdAt() - b.createdAt());
   }
 
+  messageAuthorId(message) {
+    if (!message) return null;
+    if (typeof message.userId === 'function') {
+      const raw = message.userId();
+      if (raw != null && raw !== '') return String(raw);
+    }
+    try {
+      const user = typeof message.user === 'function' ? message.user() : null;
+      if (user && typeof user.id === 'function') return String(user.id());
+      if (user && user.id != null) return String(user.id);
+    } catch (e) {
+      // F2 list payloads may omit included users; fall through to attributes.
+    }
+    const attr = message.data?.attributes?.userId;
+    return attr != null && attr !== '' ? String(attr) : null;
+  }
+
   isOwnMessage(message) {
-    return parseInt(message.user().id(), 10) === parseInt(app.session.user.id(), 10);
+    const sessionId =
+      app.session.user && typeof app.session.user.id === 'function'
+        ? app.session.user.id()
+        : app.session.user?.id;
+    const authorId = this.messageAuthorId(message);
+    if (sessionId == null || authorId == null) return false;
+    return parseInt(authorId, 10) === parseInt(sessionId, 10);
   }
 
   /**
@@ -170,7 +193,13 @@ export default class MessagesDirectConversationView extends Component {
     if (this.isOwnMessage(message) && app.session.user) {
       return app.session.user;
     }
-    return message.user();
+    try {
+      const user = typeof message.user === 'function' ? message.user() : null;
+      if (user) return user;
+    } catch (e) {
+      // ignore missing relationship
+    }
+    return null;
   }
 
   maybeInitialScroll() {
@@ -264,8 +293,10 @@ export default class MessagesDirectConversationView extends Component {
               {first ? (
                 <div className="MessagesBubble-meta">
                   <span className="MessagesBubble-avatar"><Avatar user={author} /></span>
-                  <span className="MessagesBubble-name">{username(author)}</span>
-                  <time className="MessagesBubble-time">{humanTime(message.createdAt())}</time>
+                  <span className="MessagesBubble-name">{author ? username(author) : ''}</span>
+                  <time className="MessagesBubble-time">
+                    {message.createdAt() ? humanTime(message.createdAt()) : ''}
+                  </time>
                 </div>
               ) : null}
               <div className="MessagesBubble-row">

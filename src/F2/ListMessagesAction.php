@@ -39,21 +39,28 @@ final class ListMessagesAction extends ParticipantAction
         }
 
         $messages = [];
-        foreach ($conversation->messages()->orderBy('number')->get() as $message) {
+        $included = [];
+        $seenUsers = [];
+        foreach ($conversation->messages()->with('user')->orderBy('number')->get() as $message) {
             if (!empty($message->is_hidden)) {
                 continue;
             }
-            $messages[] = [
-                'type' => 'messages',
-                'id' => (string) $message->id,
-                'attributes' => [
-                    'number' => $message->number,
-                    'content' => $message->message,
-                    'userId' => (int) $message->user_id,
-                ],
-            ];
+            $messages[] = MessageJson::resource($message);
+            $userId = (string) $message->user_id;
+            if ($userId !== '' && !isset($seenUsers[$userId])) {
+                $userDoc = MessageJson::includedUser($message->user);
+                if ($userDoc !== null) {
+                    $included[] = $userDoc;
+                    $seenUsers[$userId] = true;
+                }
+            }
         }
 
-        return new JsonResponse(['data' => $messages], 200, ['Cache-Control' => 'private, no-store']);
+        $payload = ['data' => $messages];
+        if ($included !== []) {
+            $payload['included'] = $included;
+        }
+
+        return new JsonResponse($payload, 200, ['Cache-Control' => 'private, no-store']);
     }
 }

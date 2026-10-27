@@ -31,13 +31,29 @@ final class ListConversationsAction extends ParticipantAction
 
         $conversations = Conversation::whereHas('recipients', function ($query) use ($actor) {
             $query->where('user_id', $actor->id);
-        })->orderBy('updated_at', 'desc')->get();
+        })->with(['recipients.user'])->orderBy('updated_at', 'desc')->get();
 
         $data = [];
+        $included = [];
+        $seen = [];
         foreach ($conversations as $conversation) {
-            $data[] = ['type' => 'conversations', 'id' => (string) $conversation->id];
+            $doc = ConversationJson::document($conversation, $actor);
+            $data[] = $doc['data'];
+            foreach ($doc['included'] ?? [] as $row) {
+                $key = $row['type'].':'.$row['id'];
+                if (isset($seen[$key])) {
+                    continue;
+                }
+                $seen[$key] = true;
+                $included[] = $row;
+            }
         }
 
-        return new JsonResponse(['data' => $data], 200, ['Cache-Control' => 'private, no-store']);
+        $payload = ['data' => $data];
+        if ($included !== []) {
+            $payload['included'] = $included;
+        }
+
+        return new JsonResponse($payload, 200, ['Cache-Control' => 'private, no-store']);
     }
 }
