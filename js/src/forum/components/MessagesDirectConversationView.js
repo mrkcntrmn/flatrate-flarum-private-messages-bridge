@@ -613,13 +613,22 @@ export default class MessagesDirectConversationView extends Component {
     this.sendTimeoutInterval();
     m.redraw();
 
-    app.store
-      .createRecord('messages')
-      .save({
-        messageContents: draft,
-        conversationId: this.conversation.id(),
+    app
+      .request({
+        method: 'POST',
+        url: app.forum.attribute('apiUrl') + '/neoncube-private-messages/messages',
+        body: {
+          data: {
+            type: 'messages',
+            attributes: {
+              messageContents: draft,
+              conversationId: this.conversation.id(),
+            },
+          },
+        },
       })
-      .then((message) => {
+      .then((payload) => {
+        const message = app.store.pushPayload(payload);
         app.cache.messages[this.conversation.id()][message.data.id] = message;
         this.messageContent('');
         this.isSending = false;
