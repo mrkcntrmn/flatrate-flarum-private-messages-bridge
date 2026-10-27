@@ -256,6 +256,47 @@ if (($row["attributes"]["message"] ?? "") !== "hello bob" || (int) ($row["attrib
 echo "DM_AUTHORIZED_PARTICIPANT_READ=PASS"
 rm -f "${BOB_NEW}" "${ALICE_LIST}"
 
+# Production-equivalent forum frontend compile using the packaged F2 stylesheet.
+# Do not inject theme stubs into vendor; fail if the install was patched.
+VENDOR_DM_LESS="${SMOKE_ROOT}/vendor/flatrate/flarum-private-messages-bridge/resources/less/forum-f2.less"
+VENDOR_EXTEND_F2="${SMOKE_ROOT}/vendor/flatrate/flarum-private-messages-bridge/extend-f2.php"
+if [[ ! -f "${VENDOR_DM_LESS}" ]]; then
+  echo "DM_F2_NATIVE_STYLESHEET=FAIL missing_forum-f2.less" >&2
+  exit 1
+fi
+if ! grep -q "resources/less/forum-f2.less" "${VENDOR_EXTEND_F2}"; then
+  echo "DM_F2_NATIVE_STYLESHEET=FAIL extend-f2_not_wired_to_forum-f2.less" >&2
+  exit 1
+fi
+if grep -q "resources/less/extension.less" "${VENDOR_EXTEND_F2}"; then
+  echo "DM_F2_NATIVE_STYLESHEET=FAIL extend-f2_still_loads_extension.less" >&2
+  exit 1
+fi
+if grep -q 'F2_BROWSER_THEME_VARS' "${VENDOR_DM_LESS}" \
+  || grep -qE '^@(control-bg|body-bg|muted-color|screen-tablet)\s*:' "${VENDOR_DM_LESS}"; then
+  echo "F2_COMPAT_DM_LESS_STUB=USED_OR_PATCHED" >&2
+  exit 1
+fi
+echo "F2_COMPAT_DM_LESS_STUB=NOT_USED"
+echo "DM_F2_NATIVE_STYLESHEET=PASS"
+
+HOME_BODY="$(mktemp)"
+HOME_CODE="$(curl -s -o "${HOME_BODY}" -w '%{http_code}' "${BASE}/")"
+if [[ "${HOME_CODE}" != "200" ]]; then
+  echo "DM_F2_ASSET_COMPILATION=FAIL home_status=${HOME_CODE}" >&2
+  head -c 2000 "${HOME_BODY}" >&2 || true
+  tail -n 80 "${SMOKE_ROOT}/http.log" >&2 || true
+  exit 1
+fi
+if grep -qiE 'Less_Exception|undefined variable|variable.*is undefined|ParseError' "${HOME_BODY}" \
+  || grep -qiE 'Less_Exception|undefined variable' "${SMOKE_ROOT}/storage/logs/"*.log 2>/dev/null; then
+  echo "DM_F2_ASSET_COMPILATION=FAIL less_error" >&2
+  exit 1
+fi
+rm -f "${HOME_BODY}"
+echo "DM_F2_ASSET_COMPILATION=PASS"
+echo "GET_HOME=200"
+
 php flarum extension:disable flatrate-private-messages-bridge
 DISABLED_CODE="$(curl -s -o /dev/null -w '%{http_code}' -H "Authorization: Token ${ALICE_TOKEN}" "${BASE}/api/neoncube-private-messages/conversations")"
 if [[ "${DISABLED_CODE}" == "200" ]]; then
@@ -270,4 +311,5 @@ if [[ "${AFTER_MESSAGES}" -lt "${BEFORE_MESSAGES}" || "${AFTER_CONVERSATIONS}" -
 fi
 echo "DM_DISABLE_FALLBACK=PASS status=${DISABLED_CODE}"
 echo "DM_F2_HTTP=PASS"
+echo "DM_F2_FRONTEND_ASSETS=PASS"
 echo "PRODUCTION_INSTALL=false"

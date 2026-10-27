@@ -26,8 +26,8 @@ use Neoncube\FlarumPrivateMessages\F2\UserResourceFields;
 return [
     (new Extend\Frontend('forum'))
         ->js(__DIR__.'/js/dist/forum-f2.js')
-        ->css(__DIR__.'/resources/less/extension.less')
-        ->css(__DIR__.'/resources/less/messages-v2-bubbles.less'),
+        // F2-native stylesheet only — never load extension.less here (F1 theme tokens).
+        ->css(__DIR__.'/resources/less/forum-f2.less'),
 
     new Extend\Locales(__DIR__.'/resources/locale'),
 

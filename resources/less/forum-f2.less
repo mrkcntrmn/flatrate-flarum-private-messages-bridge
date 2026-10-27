@@ -1,0 +1,369 @@
+// Flarum 2 Direct Messages presentation for Messaging UI.
+// Loads only from extend-f2.php. Uses runtime CSS custom properties with
+// static fallbacks — no Flarum 1 theme LESS tokens or mixins.
+// Legacy F1 styles remain in extension.less + messages-v2-bubbles.less.
+
+// ---------------------------------------------------------------------------
+// Direct V2 Messages surface (presentationVersion=2)
+// Fits Messaging UI conversation body; does not own page height.
+// ---------------------------------------------------------------------------
+.MessagesDirectSurface {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  min-width: 0;
+  height: 100%;
+  overflow: hidden;
+}
+
+.MessagesDirectSurface-loading {
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 0;
+}
+
+.MessagesDirectSurface .MessagesMessageViewport,
+.DirectMessageViewport {
+  flex: 1 1 auto;
+  min-height: 0;
+  min-width: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+.MessagesDirectSurface-stream {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  max-width: 860px;
+  width: 100%;
+  margin: 0 auto;
+  box-sizing: border-box;
+}
+
+.MessagesMessageGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.MessagesMessageGroup--in {
+  align-items: flex-start;
+}
+
+.MessagesMessageGroup--out {
+  align-items: flex-end;
+}
+
+.MessagesMessageGroup--out .MessagesBubble-meta {
+  flex-direction: row-reverse;
+  justify-content: flex-start;
+}
+
+.MessagesBubble {
+  max-width: 82%;
+  min-width: 0;
+}
+
+.MessagesBubble-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 4px;
+  color: var(--muted-color, #667788);
+  font-size: 11px;
+  line-height: 1.3;
+  min-width: 0;
+}
+
+.MessagesBubble-avatar {
+  .Avatar {
+    width: 20px;
+    height: 20px;
+    font-size: 10px;
+  }
+}
+
+.MessagesBubble-name,
+.MessagesBubble-time {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.MessagesBubble-row {
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 6px;
+  max-width: 100%;
+}
+
+.MessagesBubble-body,
+.MessagesBubble .message-text {
+  margin: 0;
+  padding: 8px 12px;
+  border-radius: 14px;
+  background: var(--control-bg, #e8ecf0);
+  color: var(--text-color, #111111);
+  max-width: 100%;
+  word-wrap: break-word;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.MessagesBubble--out .MessagesBubble-body,
+.MessagesBubble--out .message-text {
+  // Prefer runtime color-mix when available; static fallback for older engines.
+  background: #d6e4f7;
+  background: color-mix(in srgb, var(--primary-color, #0a84ff) 18%, var(--control-bg, #e8ecf0));
+}
+
+.MessagesBubble-read {
+  color: var(--muted-color, #667788);
+  font-size: 11px;
+}
+
+.MessagesTypingIndicator {
+  align-self: flex-start;
+  padding: 4px 8px;
+}
+
+.MessagesTypingIndicator-dots {
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+  height: 18px;
+}
+
+.MessagesTypingIndicator-dots span {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--muted-color, #667788);
+  opacity: 0.55;
+  animation: messagesTypingDot 1.2s infinite ease-in-out;
+}
+
+.MessagesTypingIndicator-dots span:nth-child(2) {
+  animation-delay: 0.15s;
+}
+
+.MessagesTypingIndicator-dots span:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+@keyframes messagesTypingDot {
+  0%,
+  80%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.4;
+  }
+  40% {
+    transform: translateY(-3px);
+    opacity: 0.9;
+  }
+}
+
+.MessagesDirectSurface .MessagesComposer,
+.MessagesDirectSurface .DirectComposer {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  margin: 0;
+  padding: 8px 12px calc(8px + env(safe-area-inset-bottom, 0px));
+  border-top: 1px solid var(--control-bg, #e8ecf0);
+  background: var(--body-bg, #ffffff);
+}
+
+.MessagesDirectSurface .MessagesComposer-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 44px;
+  max-height: 144px;
+  resize: none;
+  overflow-y: auto;
+  margin: 0;
+  padding: 10px 12px;
+  line-height: 1.35;
+}
+
+.MessagesDirectSurface .MessagesComposer-send {
+  flex: 0 0 auto;
+  min-width: 44px;
+  min-height: 44px;
+}
+
+// Flarum core hides icons on primary buttons; keep the paper-plane visible.
+.MessagesDirectSurface .DirectComposer .MessagesComposer-send.Button--icon .Button-icon,
+.MessagesDirectSurface .MessagesComposer .MessagesComposer-send.Button--icon .Button-icon {
+  display: inline-block;
+}
+
+.MessagesDirectSurface .MessagesJumpToLatest {
+  flex: 0 0 auto;
+  align-self: center;
+  margin: 4px 0;
+  min-height: 44px;
+}
+
+@media (min-width: 768px) {
+  .MessagesBubble {
+    max-width: 76%;
+  }
+}
+
+@media (min-width: 1280px) {
+  .MessagesBubble {
+    // Avoid CSS min(%, rem): Flarum's PHP less.php cannot evaluate mixed units.
+    max-width: 42rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .MessagesTypingIndicator-dots span {
+    animation: none;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Bubble presentation (F2-native port of messages-v2-bubbles.less)
+// ---------------------------------------------------------------------------
+.MessagesDirectSurface {
+  .MessagesMessageGroup {
+    width: 100%;
+  }
+
+  // The first bubble owns the group metadata. Let that wrapper span the
+  // conversation width so the timestamp can be centered independently of the
+  // bubble width and sender identity.
+  .MessagesBubble.is-first {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .MessagesBubble.is-first .MessagesBubble-meta {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    align-items: center;
+    width: 100%;
+    gap: 6px;
+  }
+
+  .MessagesMessageGroup--out .MessagesBubble-meta {
+    flex-direction: initial;
+    justify-content: initial;
+  }
+
+  .MessagesBubble-meta .MessagesBubble-avatar {
+    grid-column: 1;
+    grid-row: 1;
+    justify-self: start;
+  }
+
+  .MessagesMessageGroup--in .MessagesBubble-meta .MessagesBubble-name {
+    grid-column: 1;
+    grid-row: 1;
+    justify-self: start;
+    min-width: 0;
+    max-width: 100%;
+    margin-left: 26px;
+  }
+
+  .MessagesBubble-meta .MessagesBubble-time {
+    grid-column: 2;
+    grid-row: 1;
+    justify-self: center;
+    text-align: center;
+  }
+
+  // The signed-in user's own identity is implicit from right alignment and
+  // bubble color; do not repeat their avatar/nickname on their messages.
+  .MessagesMessageGroup--out .MessagesBubble-avatar,
+  .MessagesMessageGroup--out .MessagesBubble-name {
+    display: none;
+  }
+
+  // Bubble rows are `inline-flex` by default; horizontal `margin: auto` is
+  // ignored on inline-level boxes, so own messages stayed left under the
+  // full-width metadata wrapper. Force flex + fit-content so edge pinning works.
+  .MessagesMessageGroup--in .MessagesBubble.is-first .MessagesBubble-row {
+    display: flex;
+    width: fit-content;
+    margin-right: auto;
+    max-width: 82%;
+  }
+
+  .MessagesMessageGroup--out .MessagesBubble.is-first .MessagesBubble-row {
+    display: flex;
+    width: fit-content;
+    margin-left: auto;
+    max-width: 82%;
+  }
+
+  // Follow-on bubbles in a group have no metadata row; keep them edge-pinned.
+  .MessagesMessageGroup--in .MessagesBubble:not(.is-first) {
+    align-self: flex-start;
+    width: fit-content;
+    max-width: 82%;
+  }
+
+  .MessagesMessageGroup--out .MessagesBubble:not(.is-first) {
+    align-self: flex-end;
+    width: fit-content;
+    max-width: 82%;
+  }
+
+  // Shared bubble palette with Live/group chat.
+  .MessagesBubble--in .MessagesBubble-body,
+  .MessagesBubble--in .message-text {
+    background: #e9e9eb;
+    color: #111111;
+  }
+
+  .MessagesBubble--out .MessagesBubble-body,
+  .MessagesBubble--out .message-text {
+    background: #0a84ff;
+    color: #ffffff;
+  }
+
+  .MessagesBubble--in .MessagesBubble-body a,
+  .MessagesBubble--in .message-text a,
+  .MessagesBubble--out .MessagesBubble-body a,
+  .MessagesBubble--out .message-text a {
+    color: inherit;
+  }
+
+  // Direct-only read receipt: the existing checkmark is rendered only when
+  // the other participant's lastRead covers the last outgoing message. Move it
+  // below the bubble instead of placing it inline beside the message body.
+  .MessagesBubble--out.is-last .MessagesBubble-row {
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 3px;
+  }
+
+  .MessagesBubble-read {
+    display: block;
+    align-self: flex-end;
+    margin: 0 2px 0 0;
+    color: #0a84ff;
+    font-size: 11px;
+    line-height: 1;
+  }
+}
+
+@media (min-width: 768px) {
+  .MessagesDirectSurface .MessagesMessageGroup--in .MessagesBubble.is-first .MessagesBubble-row,
+  .MessagesDirectSurface .MessagesMessageGroup--out .MessagesBubble.is-first .MessagesBubble-row {
+    max-width: 76%;
+  }
+}
