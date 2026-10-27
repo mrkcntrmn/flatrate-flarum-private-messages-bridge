@@ -211,7 +211,7 @@ curl -fsS -o "${HISTORY_BODY}" -H "Authorization: Token ${BOB_TOKEN}" "${BASE}/a
 php -r '
 $body = json_decode(file_get_contents($argv[1]), true);
 $rows = $body["data"] ?? [];
-$contents = array_map(fn ($row) => $row["attributes"]["content"] ?? "", $rows);
+$contents = array_map(fn ($row) => $row["attributes"]["message"] ?? "", $rows);
 $numbers = array_map(fn ($row) => $row["attributes"]["number"] ?? null, $rows);
 if ($contents !== ["historical-one", "historical-two"] || $numbers !== [1, 2]) {
     fwrite(STDERR, "DM_HISTORY_PRESERVED=FAIL ".json_encode($rows)."\n");
@@ -248,7 +248,7 @@ curl -fsS -o "${BOB_NEW}" -H "Authorization: Token ${BOB_TOKEN}" "${BASE}/api/ne
 php -r '
 $body = json_decode(file_get_contents($argv[1]), true);
 $row = $body["data"][0] ?? [];
-if (($row["attributes"]["content"] ?? "") !== "hello bob" || (int) ($row["attributes"]["userId"] ?? 0) !== (int) $argv[2]) {
+if (($row["attributes"]["message"] ?? "") !== "hello bob" || (int) ($row["attributes"]["userId"] ?? 0) !== (int) $argv[2]) {
     fwrite(STDERR, "DM_AUTHORIZED_PARTICIPANT_READ=FAIL\n");
     exit(1);
 }
