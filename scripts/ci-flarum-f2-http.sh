@@ -458,6 +458,136 @@ fi
 echo "DM_NOTIFICATION_GENERATION=PASS count=${NOTIF_COUNT}"
 echo "DM_NOTIFICATION_PATH=PASS"
 
+# --- Notification subject resource regressions (EXEC-005 / notifications-500) ---
+# Empty-collection include=subject must not 500: schema resolves Message::class
+# via MessageResource. A real DM notification must serialize a valid subject.
+GUEST_NOTIF_CODE="$(curl -s -o /dev/null -w '%{http_code}' "${BASE}/api/notifications")"
+if [[ "${GUEST_NOTIF_CODE}" != "401" && "${GUEST_NOTIF_CODE}" != "403" ]]; then
+  echo "DM_NOTIFICATIONS_GUEST=FAIL status=${GUEST_NOTIF_CODE}" >&2
+  exit 1
+fi
+echo "DM_NOTIFICATIONS_GUEST=DENY status=${GUEST_NOTIF_CODE}"
+
+FRANK_ID="$(create_user frank frank@example.test frank-pass-1)"
+FRANK_TOKEN="$(token_for frank frank-pass-1)"
+# Index defaultInclude already contains subject+fromUser; bare GET must still
+# succeed once Message::class maps to a registered ApiResource type.
+FRANK_ZERO="$(mktemp)"
+FRANK_ZERO_CODE="$(curl -sS -o "${FRANK_ZERO}" -w '%{http_code}' -H "Authorization: Token ${FRANK_TOKEN}" \
+  "${BASE}/api/notifications")"
+expect_status DM_NOTIFICATIONS_EMPTY 200 "${FRANK_ZERO_CODE}"
+php -r '
+$body = json_decode(file_get_contents($argv[1]), true);
+$rows = $body["data"] ?? null;
+if (!is_array($rows) || count($rows) !== 0) {
+  fwrite(STDERR, "DM_NOTIFICATIONS_EMPTY=FAIL unexpected_rows\n");
+  exit(1);
+}
+' "${FRANK_ZERO}"
+rm -f "${FRANK_ZERO}"
+
+FRANK_SUBJECT="$(mktemp)"
+FRANK_SUBJECT_CODE="$(curl -sS -o "${FRANK_SUBJECT}" -w '%{http_code}' -H "Authorization: Token ${FRANK_TOKEN}" \
+  "${BASE}/api/notifications?include=subject")"
+expect_status DM_NOTIFICATIONS_INCLUDE_SUBJECT_EMPTY 200 "${FRANK_SUBJECT_CODE}"
+rm -f "${FRANK_SUBJECT}"
+
+BOB_FROM="$(mktemp)"
+BOB_FROM_CODE="$(curl -sS -o "${BOB_FROM}" -w '%{http_code}' -H "Authorization: Token ${BOB_TOKEN}" \
+  "${BASE}/api/notifications?include=fromUser")"
+expect_status DM_NOTIFICATIONS_INCLUDE_FROM_USER 200 "${BOB_FROM_CODE}"
+rm -f "${BOB_FROM}"
+
+BOB_SUBJECT="$(mktemp)"
+BOB_SUBJECT_CODE="$(curl -sS -o "${BOB_SUBJECT}" -w '%{http_code}' -H "Authorization: Token ${BOB_TOKEN}" \
+  "${BASE}/api/notifications?include=subject")"
+if [[ "${BOB_SUBJECT_CODE}" != "200" ]]; then
+  echo "DM_NOTIFICATIONS_INCLUDE_SUBJECT_DM=FAIL status=${BOB_SUBJECT_CODE}" >&2
+  cat "${BOB_SUBJECT}" >&2 || true
+  tail -n 120 "${SMOKE_ROOT}/http.log" >&2 || true
+  exit 1
+fi
+php -r '
+$body = json_decode(file_get_contents($argv[1]), true);
+$rows = $body["data"] ?? [];
+$dm = null;
+foreach ($rows as $row) {
+  if (($row["attributes"]["contentType"] ?? "") === "newPrivateMessage") {
+    $dm = $row;
+    break;
+  }
+}
+if ($dm === null) {
+  fwrite(STDERR, "DM_NOTIFICATIONS_INCLUDE_SUBJECT_DM=FAIL no_newPrivateMessage_row\n");
+  exit(1);
+}
+$subjectRel = $dm["relationships"]["subject"]["data"] ?? null;
+if (!is_array($subjectRel) || ($subjectRel["type"] ?? "") !== "neoncube-private-messages-messages") {
+  fwrite(STDERR, "DM_NOTIFICATIONS_INCLUDE_SUBJECT_DM=FAIL bad_subject_rel=".json_encode($subjectRel)."\n");
+  exit(1);
+}
+$subjectId = (string) ($subjectRel["id"] ?? "");
+$included = $body["included"] ?? [];
+$found = false;
+foreach ($included as $row) {
+  if (($row["type"] ?? "") === "neoncube-private-messages-messages" && (string) ($row["id"] ?? "") === $subjectId) {
+    $found = true;
+    if (($row["attributes"]["message"] ?? null) === null) {
+      fwrite(STDERR, "DM_NOTIFICATIONS_INCLUDE_SUBJECT_DM=FAIL missing_message_attr\n");
+      exit(1);
+    }
+    break;
+  }
+}
+if (!$found) {
+  fwrite(STDERR, "DM_NOTIFICATIONS_INCLUDE_SUBJECT_DM=FAIL subject_not_included\n");
+  exit(1);
+}
+' "${BOB_SUBJECT}"
+echo "DM_NOTIFICATIONS_INCLUDE_SUBJECT_DM=PASS"
+rm -f "${BOB_SUBJECT}"
+
+# Resource registration must not expose a public private-message API.
+RESOURCE_TYPE="neoncube-private-messages-messages"
+for path in \
+  "/api/${RESOURCE_TYPE}" \
+  "/api/${RESOURCE_TYPE}/1" \
+  "/api/${RESOURCE_TYPE}?page%5Blimit%5D=1"
+do
+  CODE="$(curl -s -o /dev/null -w '%{http_code}' -H "Authorization: Token ${ALICE_TOKEN}" "${BASE}${path}")"
+  if [[ "${CODE}" == "200" || "${CODE}" == "201" || "${CODE}" == "204" ]]; then
+    echo "DM_MESSAGE_RESOURCE_NO_PUBLIC_ROUTE=FAIL path=${path} status=${CODE}" >&2
+    exit 1
+  fi
+  if [[ "${CODE}" != "404" && "${CODE}" != "405" && "${CODE}" != "400" ]]; then
+    # 401/403 would also mean an endpoint exists; reject those for this type.
+    if [[ "${CODE}" == "401" || "${CODE}" == "403" ]]; then
+      echo "DM_MESSAGE_RESOURCE_NO_PUBLIC_ROUTE=FAIL path=${path} status=${CODE}_implies_route" >&2
+      exit 1
+    fi
+  fi
+  echo "DM_MESSAGE_RESOURCE_NO_PUBLIC_ROUTE=PASS path=${path} status=${CODE}"
+done
+
+# Non-participant must not gain a Show endpoint for the notification subject type.
+# Alice is not a participant of the Bob/Carol historical conversation.
+HIST_MSG_ID="$(php -r '
+$pdo = new PDO("sqlite:storage/f2-dm.sqlite");
+$id = $pdo->query("SELECT id FROM messages WHERE conversation_id = ".(int)$argv[1]." ORDER BY number ASC LIMIT 1")->fetchColumn();
+echo $id !== false ? (string) $id : "";
+' "${HISTORICAL_ID}")"
+if [[ -z "${HIST_MSG_ID}" ]]; then
+  echo "DM_NONPARTICIPANT_SUBJECT=FAIL missing_historical_message_id" >&2
+  exit 1
+fi
+ALICE_DIRECT_CODE="$(curl -s -o /dev/null -w '%{http_code}' -H "Authorization: Token ${ALICE_TOKEN}" \
+  "${BASE}/api/${RESOURCE_TYPE}/${HIST_MSG_ID}")"
+if [[ "${ALICE_DIRECT_CODE}" == "200" ]]; then
+  echo "DM_NONPARTICIPANT_SUBJECT=FAIL direct_resource_show_ok status=${ALICE_DIRECT_CODE}" >&2
+  exit 1
+fi
+echo "DM_NONPARTICIPANT_SUBJECT=DENY status=${ALICE_DIRECT_CODE}"
+
 # Production-equivalent forum frontend compile using the packaged F2 stylesheet.
 # Do not inject theme stubs into vendor; fail if the install was patched.
 VENDOR_DM_LESS="${SMOKE_ROOT}/vendor/flatrate/flarum-private-messages-bridge/resources/less/forum-f2.less"
