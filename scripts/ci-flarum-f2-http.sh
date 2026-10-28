@@ -73,7 +73,9 @@ rm -f "${SMOKE_ROOT}/install.json"
 php -r '
 $pdo = new PDO("sqlite:storage/f2-dm.sqlite");
 $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-$pdo->exec("INSERT INTO group_permission (group_id, permission) SELECT 3, \"startConversation\" WHERE NOT EXISTS (SELECT 1 FROM group_permission WHERE group_id = 3 AND permission = \"startConversation\")");
+foreach (["startConversation", "neoncube-private-messages.allowUsersToReceiveEmailNotifications"] as $permission) {
+  $pdo->exec("INSERT INTO group_permission (group_id, permission) SELECT 3, \"".$permission."\" WHERE NOT EXISTS (SELECT 1 FROM group_permission WHERE group_id = 3 AND permission = \"".$permission."\")");
+}
 '
 
 (
@@ -233,8 +235,11 @@ CREATED_CODE="$(curl -sS -o "${CREATED}" -w '%{http_code}' -H 'Content-Type: app
 if [[ "${CREATED_CODE}" != "201" ]]; then
   echo "DM_AUTHORIZED_PARTICIPANT_SEND=FAIL status=${CREATED_CODE}" >&2
   cat "${CREATED}" >&2 || true
+  tail -n 120 "${SMOKE_ROOT}/http.log" >&2 || true
   exit 1
 fi
+echo "F2_HTTP_CREATE_CONVERSATION=PASS"
+echo "F2_INITIAL_MESSAGE_PERSISTED=PASS"
 echo "DM_AUTHORIZED_PARTICIPANT_SEND=PASS"
 NEW_ID="$(php -r '$j=json_decode(file_get_contents($argv[1]), true); echo $j["data"]["id"] ?? "";' "${CREATED}")"
 rm -f "${CREATED}"
@@ -255,6 +260,89 @@ if (($row["attributes"]["message"] ?? "") !== "hello bob" || (int) ($row["attrib
 ' "${BOB_NEW}" "${ALICE_ID}"
 echo "DM_AUTHORIZED_PARTICIPANT_READ=PASS"
 rm -f "${BOB_NEW}" "${ALICE_LIST}"
+
+# Reply flow: Bob responds; Alice must see the reply in order.
+REPLY="$(mktemp)"
+REPLY_CODE="$(curl -sS -o "${REPLY}" -w '%{http_code}' -H 'Content-Type: application/json' -H "Authorization: Token ${BOB_TOKEN}" \
+  -d "{\"data\":{\"attributes\":{\"conversationId\":\"${NEW_ID}\",\"messageContents\":\"hello alice reply\"}}}" \
+  "${BASE}/api/neoncube-private-messages/messages")"
+if [[ "${REPLY_CODE}" != "201" && "${REPLY_CODE}" != "200" ]]; then
+  echo "DM_AUTHORIZED_PARTICIPANT_REPLY=FAIL status=${REPLY_CODE}" >&2
+  cat "${REPLY}" >&2 || true
+  tail -n 80 "${SMOKE_ROOT}/http.log" >&2 || true
+  exit 1
+fi
+echo "DM_AUTHORIZED_PARTICIPANT_REPLY=PASS status=${REPLY_CODE}"
+rm -f "${REPLY}"
+
+ALICE_THREAD="$(mktemp)"
+curl -fsS -o "${ALICE_THREAD}" -H "Authorization: Token ${ALICE_TOKEN}" \
+  "${BASE}/api/neoncube-private-messages/messages/${NEW_ID}"
+php -r '
+$body = json_decode(file_get_contents($argv[1]), true);
+$rows = $body["data"] ?? [];
+$contents = array_map(fn ($row) => $row["attributes"]["message"] ?? "", $rows);
+$senders = array_map(fn ($row) => (int) ($row["attributes"]["userId"] ?? 0), $rows);
+if ($contents !== ["hello bob", "hello alice reply"]) {
+    fwrite(STDERR, "DM_MESSAGE_ORDER=FAIL ".json_encode($contents)."\n");
+    exit(1);
+}
+if ($senders !== [(int) $argv[2], (int) $argv[3]]) {
+    fwrite(STDERR, "DM_REPLY_SENDER=FAIL ".json_encode($senders)."\n");
+    exit(1);
+}
+' "${ALICE_THREAD}" "${ALICE_ID}" "${BOB_ID}"
+echo "DM_MESSAGE_ORDER=PASS"
+echo "DM_REPLY_SENDER=PASS"
+rm -f "${ALICE_THREAD}"
+
+# Guest and non-participant denial on the new conversation write path.
+BEFORE_GUEST_MESSAGES="$(php -r '$pdo=new PDO("sqlite:storage/f2-dm.sqlite"); echo $pdo->query("SELECT COUNT(*) FROM messages")->fetchColumn();')"
+GUEST_WRITE_BODY="$(mktemp)"
+GUEST_WRITE_CODE="$(curl -sS -o "${GUEST_WRITE_BODY}" -w '%{http_code}' -H 'Content-Type: application/json' \
+  -d "{\"data\":{\"attributes\":{\"conversationId\":\"${NEW_ID}\",\"messageContents\":\"guest-should-not-post\"}}}" \
+  "${BASE}/api/neoncube-private-messages/messages")"
+AFTER_GUEST_MESSAGES="$(php -r '$pdo=new PDO("sqlite:storage/f2-dm.sqlite"); echo $pdo->query("SELECT COUNT(*) FROM messages")->fetchColumn();')"
+if [[ "${AFTER_GUEST_MESSAGES}" != "${BEFORE_GUEST_MESSAGES}" ]]; then
+  echo "DM_GUEST_WRITE=FAIL message_persisted status=${GUEST_WRITE_CODE}" >&2
+  cat "${GUEST_WRITE_BODY}" >&2 || true
+  exit 1
+fi
+if [[ "${GUEST_WRITE_CODE}" != "401" && "${GUEST_WRITE_CODE}" != "403" && "${GUEST_WRITE_CODE}" != "400" ]]; then
+  echo "DM_GUEST_WRITE=FAIL status=${GUEST_WRITE_CODE}" >&2
+  cat "${GUEST_WRITE_BODY}" >&2 || true
+  exit 1
+fi
+echo "DM_GUEST_WRITE=DENY status=${GUEST_WRITE_CODE}"
+rm -f "${GUEST_WRITE_BODY}"
+
+# Notification blueprint path: email-notification permission is granted above so
+# NewPrivateMessageBlueprint is constructed during create/reply. A PHP fatal here
+# would have already failed the HTTP create/reply assertions.
+php -r '
+require "vendor/autoload.php";
+if (!class_exists("Neoncube\\FlarumPrivateMessages\\Notifications\\NewPrivateMessageBlueprint")) {
+    fwrite(STDERR, "DM_BLUEPRINT_LOAD=FAIL\n");
+    exit(1);
+}
+$ref = new ReflectionClass("Neoncube\\FlarumPrivateMessages\\Notifications\\NewPrivateMessageBlueprint");
+$type = $ref->getMethod("getFromUser")->getReturnType();
+if (!$type || (string) $type !== "?Flarum\\User\\User") {
+    fwrite(STDERR, "DM_BLUEPRINT_INTERFACE=FAIL return=".($type ? (string) $type : "NONE")."\n");
+    exit(1);
+}
+echo "DM_BLUEPRINT_LOAD=PASS\n";
+echo "DM_BLUEPRINT_INTERFACE=PASS\n";
+'
+# Require at least one alert-driver notification for the create/reply traffic.
+NOTIF_COUNT="$(php -r '$pdo=new PDO("sqlite:storage/f2-dm.sqlite"); echo $pdo->query("SELECT COUNT(*) FROM notifications WHERE type = \"newPrivateMessage\"")->fetchColumn();')"
+if [[ "${NOTIF_COUNT}" -lt 1 ]]; then
+  echo "DM_NOTIFICATION_GENERATION=FAIL count=${NOTIF_COUNT}" >&2
+  php -r '$pdo=new PDO("sqlite:storage/f2-dm.sqlite"); foreach ($pdo->query("SELECT id,user_id,type,subject_id,data FROM notifications") as $row) { echo json_encode($row), "\n"; }' >&2 || true
+  exit 1
+fi
+echo "DM_NOTIFICATION_GENERATION=PASS count=${NOTIF_COUNT}"
+echo "DM_NOTIFICATION_PATH=PASS"
 
 # Production-equivalent forum frontend compile using the packaged F2 stylesheet.
 # Do not inject theme stubs into vendor; fail if the install was patched.

@@ -6,8 +6,10 @@
  * Native Flarum messages store dialogs, not these conversation rows, so this
  * bridge remains the reader for the historical private-message tables.
  * Forum JS registers app.flatRateMessagingSources.direct only (no /messages
- * route ownership). Email notifications and the Pusher typing route stay
- * unregistered. Authorization still requires a participant row.
+ * route ownership). Notification blueprint sync is registered for the F2 alert driver
+ * (email stays off by default; F2 has no DM forum deep-link route). The Pusher
+ * typing route stays unregistered. Authorization still
+ * requires a participant row.
  */
 
 use Flarum\Api\Resource\ForumResource;
@@ -22,6 +24,7 @@ use Neoncube\FlarumPrivateMessages\F2\ListMessagesAction;
 use Neoncube\FlarumPrivateMessages\F2\ReadMessageAction;
 use Neoncube\FlarumPrivateMessages\F2\ShowConversationAction;
 use Neoncube\FlarumPrivateMessages\F2\UserResourceFields;
+use Neoncube\FlarumPrivateMessages\Notifications\NewPrivateMessageBlueprint;
 
 return [
     (new Extend\Frontend('forum'))
@@ -45,6 +48,14 @@ return [
 
     (new Extend\ApiResource(UserResource::class))
         ->fields(UserResourceFields::class),
+
+    // Required so NewMessageHandler::sendNewMessageNotification can sync without
+    // a PHP fatal and so Alert/Email drivers recognize the blueprint type.
+    (new Extend\Notification())
+        ->type(NewPrivateMessageBlueprint::class, ['alert']),
+
+    (new Extend\View())
+        ->namespace('flarum-private-messages', __DIR__.'/views'),
 
     (new Extend\Settings())
         ->serializeToForum('neoncubePrivateMessagesInitialInstalledVersion', 'neoncube-private-messages.initial_installed_version', function ($value) {
