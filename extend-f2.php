@@ -6,10 +6,10 @@
  * Native Flarum messages store dialogs, not these conversation rows, so this
  * bridge remains the reader for the historical private-message tables.
  * Forum JS registers app.flatRateMessagingSources.direct only (no /messages
- * route ownership). Notification blueprint sync is registered for the F2 alert driver
- * (email stays off by default; F2 has no DM forum deep-link route). The Pusher
- * typing route stays unregistered. Authorization still
- * requires a participant row.
+ * route ownership). Notification blueprint sync registers alert + email drivers.
+ * Email CTAs use UrlGenerator::path("messages[/direct/{id}"]) because F2 does not
+ * register neoncube-private-messages.messages. The Pusher typing route stays
+ * unregistered. Authorization still requires a participant row.
  */
 
 use Flarum\Api\Resource\ForumResource;
@@ -52,7 +52,7 @@ return [
     // Required so NewMessageHandler::sendNewMessageNotification can sync without
     // a PHP fatal and so Alert/Email drivers recognize the blueprint type.
     (new Extend\Notification())
-        ->type(NewPrivateMessageBlueprint::class, ['alert']),
+        ->type(NewPrivateMessageBlueprint::class, ['alert', 'email']),
 
     (new Extend\View())
         ->namespace('flarum-private-messages', __DIR__.'/views'),

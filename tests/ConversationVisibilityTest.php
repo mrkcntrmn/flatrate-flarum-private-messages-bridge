@@ -21,7 +21,7 @@ class ConversationVisibilityTest extends TestCase
         $this->assertSame([], ConversationVisibility::visibleIds(9, $rows));
     }
 
-    public function testF2EntryRegistersAlertNotificationsOmitsTypingAndClientUsername(): void
+    public function testF2EntryRegistersAlertAndEmailNotificationsOmitsTypingAndClientUsername(): void
     {
         $extend = (string) file_get_contents(dirname(__DIR__).'/extend.php');
         $f2 = (string) file_get_contents(dirname(__DIR__).'/extend-f2.php');
@@ -36,7 +36,7 @@ class ConversationVisibilityTest extends TestCase
         $this->assertStringContainsString('AbstractShowController::class', $extend);
         $this->assertStringContainsString('extend-f2.php', $extend);
         $this->assertStringContainsString('Extend\\Notification', $f2);
-        $this->assertStringContainsString("->type(NewPrivateMessageBlueprint::class, ['alert'])", $f2);
+        $this->assertStringContainsString("->type(NewPrivateMessageBlueprint::class, ['alert', 'email'])", $f2);
         $this->assertStringNotContainsString('/messages/typing', $f2);
         $this->assertStringContainsString("js(__DIR__.'/js/dist/forum-f2.js')", $f2);
         $this->assertStringContainsString('forum-f2.js', $f2);

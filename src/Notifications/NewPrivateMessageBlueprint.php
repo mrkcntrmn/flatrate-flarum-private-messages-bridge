@@ -71,6 +71,38 @@ abstract class NewPrivateMessageBlueprintBody implements BlueprintInterface, Mai
     }
 
     /**
+     * Absolute messaging URL for email CTAs.
+     *
+     * Flarum 1 registers forum route neoncube-private-messages.messages.
+     * Flarum 2 serves messaging through the Messaging UI path /messages[/direct/{id}]
+     * and does not register that named PHP forum route — calling route() throws
+     * during SendEmailNotificationJob when queue=sync (production EXEC-003).
+     *
+     * @param object $url Flarum\Http\UrlGenerator (forum-capable)
+     */
+    public function getViewMessageUrl($url): string
+    {
+        $conversationId = $this->message->conversation_id ?? null;
+        if ($conversationId === null && is_object($this->conversation) && isset($this->conversation->id)) {
+            $conversationId = $this->conversation->id;
+        }
+
+        // Same F1/F2 switch as extend.php — AbstractShowController is F1-only.
+        if (class_exists(\Flarum\Api\Controller\AbstractShowController::class)) {
+            return $url->to('forum')->route('neoncube-private-messages.messages', [
+                'id' => $conversationId,
+                'number' => $this->message->number ?? null,
+            ]);
+        }
+
+        if ($conversationId !== null && $conversationId !== '') {
+            return $url->to('forum')->path('messages/direct/' . $conversationId);
+        }
+
+        return $url->to('forum')->path('messages');
+    }
+
+    /**
      * Flarum 1 MailableInterface contract.
      *
      * @return array{html: string}
@@ -89,12 +121,9 @@ abstract class NewPrivateMessageBlueprintBody implements BlueprintInterface, Mai
      */
     public function getEmailViews(): array
     {
-        $view = $this->getEmailView();
-        $html = is_array($view) ? (string) ($view['html'] ?? '') : (string) $view;
-
         return [
-            'text' => $html,
-            'html' => $html,
+            'text' => 'flarum-private-messages::emails.newPrivateMessageText',
+            'html' => 'flarum-private-messages::emails.newPrivateMessageHtml',
         ];
     }
 

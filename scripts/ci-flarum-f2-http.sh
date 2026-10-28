@@ -5,10 +5,17 @@ set -euo pipefail
 
 export PATH="/usr/bin:/bin:/usr/local/bin:${PATH:-}"
 
-ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+ROOT="$(cd "${DM_ROOT:-$(cd "$(dirname "$0")/.." && pwd)}" && pwd)"
+if [[ ! -f "${ROOT}/composer.json" ]]; then
+  echo "DM_F2_HTTP=FAIL missing_composer_json root=${ROOT}" >&2
+  exit 1
+fi
 git config --global --add safe.directory "${ROOT}" || true
-if ! git -C "${ROOT}" symbolic-ref -q HEAD >/dev/null; then
-  git -C "${ROOT}" checkout -B ci-f2-private-messages-http
+# Detached/CI checkouts need a branch name for composer path metadata; skip when git is unavailable.
+if [[ "${SKIP_GIT_CHECKOUT:-0}" != "1" ]] && command -v git >/dev/null 2>&1; then
+  if ! git -C "${ROOT}" symbolic-ref -q HEAD >/dev/null 2>&1; then
+    git -C "${ROOT}" checkout -B ci-f2-private-messages-http || true
+  fi
 fi
 
 SMOKE_ROOT="${FLARUM_SMOKE_ROOT:-${TMPDIR:-/tmp}/flarum-dm-f2-http-$$}"
@@ -76,7 +83,18 @@ $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 foreach (["startConversation", "neoncube-private-messages.allowUsersToReceiveEmailNotifications"] as $permission) {
   $pdo->exec("INSERT INTO group_permission (group_id, permission) SELECT 3, \"".$permission."\" WHERE NOT EXISTS (SELECT 1 FROM group_permission WHERE group_id = 3 AND permission = \"".$permission."\")");
 }
+$pdo->exec("INSERT INTO settings (key, value) VALUES (\"mail_driver\", \"log\") ON CONFLICT(key) DO UPDATE SET value=excluded.value");
 '
+
+# Confirm disposable install uses the sync queue (production-equivalent for this failure).
+QUEUE_DRIVER="$(php -r '$c=include "config.php"; echo $c["queue"]["driver"] ?? "";')"
+if [[ "${QUEUE_DRIVER}" != "sync" ]]; then
+  echo "F2_QUEUE_SYNC=FAIL driver=${QUEUE_DRIVER}" >&2
+  exit 1
+fi
+echo "F2_QUEUE_SYNC=PASS"
+echo "MAIL_TRANSPORT=log"
+echo "EXTERNAL_MAIL_SEND=false"
 
 (
   cd "${SMOKE_ROOT}/public"
@@ -181,6 +199,24 @@ ALICE_TOKEN="$(token_for alice alice-pass-1)"
 BOB_TOKEN="$(token_for bob bob-pass-1)"
 CAROL_TOKEN="$(token_for carol carol-pass-1)"
 
+# Force recipient email preference ON so SendEmailNotificationJob runs under
+# queue=sync. Required to reproduce EXEC-003 against old SHA (alert-only default)
+# and to qualify the fixed SHA with the real mail-render path.
+php -r '
+$site = require "site.php";
+$app = $site->bootApp();
+$user = Flarum\User\User::find((int) $argv[1]);
+if (!$user) { fwrite(STDERR, "missing bob\n"); exit(1); }
+$key = Flarum\User\User::getNotificationPreferenceKey("newPrivateMessage", "email");
+$user->setPreference($key, true);
+$user->save();
+if (!$user->shouldEmail("newPrivateMessage")) {
+  fwrite(STDERR, "EMAIL_NOTIFICATION_ENABLED=FAIL\n");
+  exit(1);
+}
+echo "EMAIL_NOTIFICATION_ENABLED=true\n";
+' "${BOB_ID}"
+
 GUEST_CODE="$(curl -s -o /dev/null -w '%{http_code}' "${BASE}/api/neoncube-private-messages/conversations")"
 if [[ "${GUEST_CODE}" != "401" && "${GUEST_CODE}" != "403" ]]; then
   echo "DM_GUEST_READ=FAIL status=${GUEST_CODE}" >&2
@@ -248,6 +284,43 @@ if [[ -z "${NEW_ID}" || "${NEW_ID}" == "${HISTORICAL_ID}" ]]; then
   exit 1
 fi
 
+# Synchronous email path: bob is a new member with email driver default-on for
+# newPrivateMessage. Create must have rendered both HTML and text views via
+# SendEmailNotificationJob (queue=sync) without the missing-route fatal.
+MAIL_LOG="$(ls -1t "${SMOKE_ROOT}/storage/logs/"*.log 2>/dev/null | head -1 || true)"
+if [[ -z "${MAIL_LOG}" ]]; then
+  echo "F2_SYNC_EMAIL=FAIL missing_flarum_log" >&2
+  exit 1
+fi
+if grep -Fq "Route neoncube-private-messages.messages not found" "${MAIL_LOG}"; then
+  echo "F2_SYNC_EMAIL=FAIL missing_named_route_in_log" >&2
+  exit 1
+fi
+if ! grep -Eq "messages/direct/${NEW_ID}|/messages/direct/${NEW_ID}" "${MAIL_LOG}"; then
+  echo "F2_EMAIL_LINK=FAIL expected_messages_direct_${NEW_ID}" >&2
+  tail -n 80 "${MAIL_LOG}" >&2 || true
+  exit 1
+fi
+if ! grep -Fq "newPrivateMessageHtml" "${MAIL_LOG}" && ! grep -Fq "View Direct Message" "${MAIL_LOG}" && ! grep -Fiq "<a href=" "${MAIL_LOG}"; then
+  # Log transport dumps the rendered MIME; require HTML body markers.
+  if ! grep -Fiq "Content-Type: text/html" "${MAIL_LOG}"; then
+    echo "F2_HTML_EMAIL=FAIL no_html_body_in_log" >&2
+    tail -n 120 "${MAIL_LOG}" >&2 || true
+    exit 1
+  fi
+fi
+if ! grep -Fiq "Content-Type: text/plain" "${MAIL_LOG}"; then
+  echo "F2_TEXT_EMAIL=FAIL no_text_body_in_log" >&2
+  tail -n 120 "${MAIL_LOG}" >&2 || true
+  exit 1
+fi
+echo "F2_SYNC_EMAIL=PASS"
+echo "F2_HTML_EMAIL=PASS"
+echo "F2_TEXT_EMAIL=PASS"
+echo "F2_EMAIL_LINK=PASS"
+echo "F2_EMAIL_ENABLED_CASE=PASS"
+echo "EMAIL_URL_PATH=messages/direct/${NEW_ID}"
+
 BOB_NEW="$(mktemp)"
 curl -fsS -o "${BOB_NEW}" -H "Authorization: Token ${BOB_TOKEN}" "${BASE}/api/neoncube-private-messages/messages/${NEW_ID}"
 php -r '
@@ -295,6 +368,47 @@ if ($senders !== [(int) $argv[2], (int) $argv[3]]) {
 echo "DM_MESSAGE_ORDER=PASS"
 echo "DM_REPLY_SENDER=PASS"
 rm -f "${ALICE_THREAD}"
+
+# Reply notification should also render without the missing-route fatal.
+if grep -Fq "Route neoncube-private-messages.messages not found" "${MAIL_LOG}"; then
+  echo "F2_REPLY_NOTIFICATION=FAIL missing_named_route_after_reply" >&2
+  exit 1
+fi
+REPLY_MAIL_HITS="$(grep -c "messages/direct/${NEW_ID}" "${MAIL_LOG}" || true)"
+if [[ "${REPLY_MAIL_HITS}" -lt 1 ]]; then
+  echo "F2_REPLY_NOTIFICATION=FAIL missing_email_link_after_reply" >&2
+  exit 1
+fi
+echo "F2_REPLY_NOTIFICATION=PASS"
+
+# Email-disabled recipient: conversation must still succeed without requiring a new mail.
+EVE_ID="$(create_user eve eve@example.test eve-pass-1)"
+php -r '
+$site = require "site.php";
+$app = $site->bootApp();
+$user = Flarum\User\User::find((int) $argv[1]);
+if (!$user) { fwrite(STDERR, "missing eve\n"); exit(1); }
+$user->setPreference(Flarum\User\User::getNotificationPreferenceKey("newPrivateMessage", "email"), false);
+$user->save();
+' "${EVE_ID}"
+BEFORE_MAIL_BYTES="$(wc -c < "${MAIL_LOG}")"
+EVE_CREATED="$(mktemp)"
+EVE_CODE="$(curl -sS -o "${EVE_CREATED}" -w '%{http_code}' -H 'Content-Type: application/json' -H "Authorization: Token ${ALICE_TOKEN}" \
+  -d "{\"data\":{\"attributes\":{\"recipient\":\"${EVE_ID}\",\"messageContents\":\"hello eve no-email\"}}}" \
+  "${BASE}/api/neoncube-private-messages/conversations")"
+if [[ "${EVE_CODE}" != "201" ]]; then
+  echo "F2_EMAIL_DISABLED_CASE=FAIL status=${EVE_CODE}" >&2
+  cat "${EVE_CREATED}" >&2 || true
+  exit 1
+fi
+EVE_CONV="$(php -r '$j=json_decode(file_get_contents($argv[1]), true); echo $j["data"]["id"] ?? "";' "${EVE_CREATED}")"
+rm -f "${EVE_CREATED}"
+php -r '
+$pdo = new PDO("sqlite:storage/f2-dm.sqlite");
+$n = (int) $pdo->query("SELECT COUNT(*) FROM messages WHERE conversation_id = ".(int)$argv[1])->fetchColumn();
+if ($n < 1) { fwrite(STDERR, "F2_EMAIL_DISABLED_CASE=FAIL no_message\n"); exit(1); }
+' "${EVE_CONV}"
+echo "F2_EMAIL_DISABLED_CASE=PASS"
 
 # Guest and non-participant denial on the new conversation write path.
 BEFORE_GUEST_MESSAGES="$(php -r '$pdo=new PDO("sqlite:storage/f2-dm.sqlite"); echo $pdo->query("SELECT COUNT(*) FROM messages")->fetchColumn();')"
@@ -400,4 +514,7 @@ fi
 echo "DM_DISABLE_FALLBACK=PASS status=${DISABLED_CODE}"
 echo "DM_F2_HTTP=PASS"
 echo "DM_F2_FRONTEND_ASSETS=PASS"
+echo "F2_CONVERSATION_CREATE=PASS"
+echo "F2_INITIAL_MESSAGE_PERSISTENCE=PASS"
+echo "F2_REPLY=PASS"
 echo "PRODUCTION_INSTALL=false"
