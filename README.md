@@ -13,6 +13,14 @@ Derived from [`neoncube/flarum-private-messages`](https://github.com/neoncube2/f
 
 **Not** an official Neoncube release and **not** labeled as `neoncube/flarum-private-messages` 1.5.5.
 
+## Flarum 2 UI restoration candidate
+
+The F2 provider continues to use historical conversation storage and participant authorization. The unified Messages shell owns `/messages`.
+
+This candidate restores the recipient picker form wrapper removed from F2 Modal, passes SearchState from SearchManager, displays F2 username vnode contents, and loads missing picker styling with F2 CSS variables. Recipient selection supports buttons and the existing keyboard navigator. Input debounce accepts pasted text. F2 suppresses the legacy Pusher typing request because its endpoint is deliberately unregistered; drafts and message sending remain available.
+
+Qualification includes the existing provider/Direct UI checks plus executable recipient rendering, selection, form submission, search-state, and typing regressions. Synthetic loopback Chrome acceptance exercises recipient lookup, initial send, and follow-up sends in the unified shell. No storage migration, notification audience change, or production install is part of this source candidate.
+
 ## Package identity
 
 - Composer: `flatrate/flarum-private-messages-bridge`

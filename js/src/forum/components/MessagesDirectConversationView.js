@@ -586,7 +586,7 @@ export default class MessagesDirectConversationView extends Component {
     this.sendFailed = false;
     m.redraw();
     this.autogrowTextarea();
-    if (this.typingTimeout && this.user) {
+    if (app.flatRatePrivateMessagesTypingEnabled !== false && this.typingTimeout && this.user) {
       app
         .request({
           method: 'POST',

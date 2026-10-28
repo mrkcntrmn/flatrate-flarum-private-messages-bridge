@@ -6,7 +6,6 @@ import extractText from 'flarum/common/utils/extractText';
 import LoadingIndicator from 'flarum/common/components/LoadingIndicator';
 import recipientLabel from './recipientLabel';
 import Stream from 'flarum/common/utils/Stream';
-import withAttr from 'flarum/common/utils/withAttr';
 import app from 'flarum/forum/app';
 
 export default class RecipientSearch extends Search {
@@ -20,7 +19,7 @@ export default class RecipientSearch extends Search {
   }
 
   view(vnode) {
-    if (this.value == null) {
+    if (this.value() == null) {
       this.value('');
     }
 
@@ -45,31 +44,22 @@ export default class RecipientSearch extends Search {
               type="search"
               placeholder={extractText(app.translator.trans('neoncube-private-messages.forum.modal.search_recipients'))}
               value={this.value()}
-              oninput={withAttr('value', this.value)}
-              onfocus={() => (this.hasFocus = true)}
-              onblur={() => (this.hasFocus = false)}
-              onkeyup={() => {
+              oninput={(event) => {
+                this.value(event.target.value);
                 clearTimeout(this.typingTimer);
                 this.doSearch = false;
                 this.typingTimer = setTimeout(() => {
                   this.doSearch = true;
                   m.redraw();
-                }, 900);
+                }, 300);
               }}
-              onkeydown={() => {
-                clearTimeout(this.typingTimer);
-              }}
+              onfocus={() => (this.hasFocus = true)}
+              onblur={() => (this.hasFocus = false)}
             />
             <ul
               className={classList('Dropdown-menu Search-results fade', {
                 in: !!loading,
               })}
-              onclick={() => {
-                const target = this.$('.SearchResult.active');
-
-                this.addRecipient(target.data('index'));
-                this.$('.RecipientsInput').trigger('focus');
-              }}
             >
               {!this.doSearch
                 ? <LoadingIndicator size="tiny" className="Button Button--icon Button--link" />
@@ -100,7 +90,7 @@ export default class RecipientSearch extends Search {
   sourceItems() {
     const items = new ItemList();
 
-    items.add('users', new UserSearchSource());
+    items.add('users', new UserSearchSource((id) => this.addRecipient(id)));
 
     return items;
   }
@@ -108,6 +98,16 @@ export default class RecipientSearch extends Search {
   /**
    * Clear the search input and the current controller's active search.
    */
+  selectResult() {
+    const id = this.getItem(this.index).data('index');
+    if (id) this.addRecipient(id);
+  }
+
+  onremove(vnode) {
+    clearTimeout(this.typingTimer);
+    super.onremove(vnode);
+  }
+
   clear() {
     this.value('');
 

@@ -28,6 +28,12 @@ export default class StartConversationModal extends Modal {
     return 'StartConversationModal Modal--medium';
   }
 
+  // Flarum 2 Modal is no longer a form. F1 already supplies its own form
+  // and does not call this wrapper hook.
+  wrapper(children) {
+    return <form onsubmit={this.onsubmit.bind(this)}>{children}</form>;
+  }
+
   content() {
     return [
       <div className="Modal-body" onclick={(e) => e.stopImmediatePropagation()}>
@@ -44,7 +50,7 @@ export default class StartConversationModal extends Modal {
                 : app.translator.trans('neoncube-private-messages.forum.modal.help')}
             </div>
             <div className="AddRecipientModal-form">
-              <RecipientSearch state={app.search} />
+              <RecipientSearch state={app.search.state || app.search} />
               {app.cache.conversationsRecipient !== null ? (
                 <div className="AddRecipientModal-form-submit">
                   <textarea

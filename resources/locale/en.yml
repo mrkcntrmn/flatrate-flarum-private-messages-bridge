@@ -25,6 +25,7 @@ neoncube-private-messages:
       help_start: >-
         Type your first message. Click the user to select a different
         recipient.
+      users_heading: Users
       search_recipients: Enter display name or username...
       submit: Send & Start Conversation
       copied: Your message has been copied to the clipboard.

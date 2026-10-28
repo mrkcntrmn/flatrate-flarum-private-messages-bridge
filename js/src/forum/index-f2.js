@@ -14,6 +14,8 @@ import registerDirectMessagingProvider from './registerDirectMessagingProvider';
 import { getNeoncubePrivateMessagesColors } from '../admin-forum-common';
 
 app.initializers.add('neoncube-private-messages', () => {
+  // F2 deliberately does not register the legacy Pusher typing endpoint.
+  app.flatRatePrivateMessagesTypingEnabled = false;
   app.store.models.messages = Message;
   app.store.models.conversations = Conversation;
   app.store.models.conversation_users = ConversationUser;
