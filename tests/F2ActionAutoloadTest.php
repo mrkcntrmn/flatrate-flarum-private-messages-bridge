@@ -38,4 +38,26 @@ class F2ActionAutoloadTest extends TestCase
             }
         }
     }
+
+    public function testMessageResourceMapsModelWithoutEndpoints(): void
+    {
+        if (!class_exists('Flarum\\Api\\Resource\\AbstractDatabaseResource')) {
+            $this->markTestSkipped('Flarum 2 AbstractDatabaseResource is required to load MessageResource.');
+        }
+
+        $class = 'Neoncube\\FlarumPrivateMessages\\F2\\MessageResource';
+        $this->assertTrue(class_exists($class), $class);
+        $ref = new ReflectionClass($class);
+        $this->assertSame(
+            realpath(dirname(__DIR__).'/src/F2/MessageResource.php'),
+            realpath($ref->getFileName())
+        );
+        $this->assertTrue($ref->isSubclassOf('Flarum\\Api\\Resource\\AbstractDatabaseResource'));
+
+        /** @var object $resource */
+        $resource = $ref->newInstance();
+        $this->assertSame('neoncube-private-messages-messages', $resource->type());
+        $this->assertSame('Neoncube\\FlarumPrivateMessages\\Message', $resource->model());
+        $this->assertSame([], $resource->endpoints());
+    }
 }
