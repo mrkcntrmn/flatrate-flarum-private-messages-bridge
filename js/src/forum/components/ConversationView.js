@@ -415,7 +415,7 @@ export default class ConversationView extends Component {
   typingPush(value) {
     this.messageContent(value);
     m.redraw();
-    if (this.typingTimeout) {
+    if (app.flatRatePrivateMessagesTypingEnabled !== false && this.typingTimeout) {
       app
         .request({
           method: 'POST',

@@ -367,3 +367,24 @@
     max-width: 76%;
   }
 }
+
+// The shared recipient picker is also used by the F2 provider. Its old styles
+// lived only in extension.less, which is intentionally not loaded on F2.
+.StartConversationModal .AddRecipientModal-form-input {
+  position: relative;
+  .Search-results {
+    position: relative;
+    display: block;
+    max-height: 45vh;
+    overflow: auto;
+    left: 0;
+    right: 0;
+    .SearchResult > button { min-height: 44px; white-space: normal; }
+    .Avatar { width: 24px; height: 24px; font-size: 12px; }
+  }
+  .Search-results:not(.in) { display: none; }
+}
+.StartConversationModal .AddRecipientModal-form-submit {
+  margin-top: 16px;
+  textarea { width: 100%; min-height: 88px; margin-bottom: 12px; }
+}
