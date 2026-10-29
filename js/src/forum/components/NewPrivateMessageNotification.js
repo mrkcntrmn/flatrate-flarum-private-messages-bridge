@@ -27,4 +27,12 @@ export default class NewPrivateMessageNotification extends Notification {
       fromUser: username,
     });
   }
+
+  /**
+   * Flarum 2 NotificationList always calls excerpt(). Missing/deleted subjects
+   * must return null rather than throw or leak message body text.
+   */
+  excerpt() {
+    return null;
+  }
 }

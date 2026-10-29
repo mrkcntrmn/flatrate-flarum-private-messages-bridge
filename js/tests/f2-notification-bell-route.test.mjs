@@ -15,6 +15,7 @@ const indexF2 = readFileSync(join(root, 'js/src/forum/index-f2.js'), 'utf8');
 
 assert.match(component, /resolveNewPrivateMessageHref/);
 assert.match(component, /from '\.\.\/utils\/resolveNewPrivateMessageHref'/);
+assert.match(component, /excerpt\(\)\s*\{[\s\S]*return null/);
 assert.doesNotMatch(component, /app\.route\(['"]messages['"]/);
 assert.doesNotMatch(indexF2, /app\.routes\.messages\s*=/);
 assert.doesNotMatch(indexF2, /app\.routes\[['"]messages['"]\]\s*=/);
