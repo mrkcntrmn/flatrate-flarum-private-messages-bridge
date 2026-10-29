@@ -123,6 +123,7 @@ $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 foreach (["startConversation", "neoncube-private-messages.allowUsersToReceiveEmailNotifications"] as $permission) {
   $pdo->exec("INSERT INTO group_permission (group_id, permission) SELECT 3, \"".$permission."\" WHERE NOT EXISTS (SELECT 1 FROM group_permission WHERE group_id = 3 AND permission = \"".$permission."\")");
 }
+$pdo->exec("INSERT INTO settings (key, value) VALUES (\"mail_driver\", \"log\") ON CONFLICT(key) DO UPDATE SET value=excluded.value");
 '
 
 (
