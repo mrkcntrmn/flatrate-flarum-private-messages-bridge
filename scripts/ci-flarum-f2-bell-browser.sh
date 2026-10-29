@@ -16,6 +16,45 @@ PLAYWRIGHT_ROOT="${PLAYWRIGHT_ROOT:-/home/ilove/dev/_labs/forum008-r4-messaging-
 
 mkdir -p "${EVIDENCE_DIR}"
 
+maybe_reexec_docker() {
+  if [[ "${BELL_F2_IN_DOCKER:-0}" == "1" ]]; then
+    return 0
+  fi
+  if php -r 'exit((extension_loaded("dom") && extension_loaded("curl") && extension_loaded("pdo_sqlite")) ? 0 : 1);' 2>/dev/null; then
+    return 0
+  fi
+  local image=""
+  if docker image inspect flatrate-php84-f2:local >/dev/null 2>&1; then
+    image="flatrate-php84-f2:local"
+  elif docker image inspect php:8.4-cli >/dev/null 2>&1; then
+    image="php:8.4-cli"
+  else
+    echo "BELL_BROWSER=FAIL host_php_missing_extensions_and_no_docker_image" >&2
+    exit 1
+  fi
+  echo "BELL_BROWSER=REEXEC image=${image}"
+  exec docker run --rm --network host \
+    -e BELL_F2_IN_DOCKER=1 \
+    -e DM_ROOT="${ROOT}" \
+    -e COMBINED_MESSAGING_UI_ROOT="${MSG_ROOT}" \
+    -e BELL_EVIDENCE_DIR="${EVIDENCE_DIR}" \
+    -e FLARUM_SMOKE_ROOT \
+    -e KEEP_SMOKE_ROOT \
+    -e FLARUM_SKELETON_VERSION \
+    -e FLARUM_CORE_VERSION \
+    -e PLAYWRIGHT_ROOT \
+    -e PLAYWRIGHT_BROWSERS_PATH \
+    -e PLAYWRIGHT_EXECUTABLE_PATH \
+    -e HOME="${HOME}" \
+    -v /home/ilove/dev:/home/ilove/dev \
+    -v "${TMPDIR:-/tmp}:${TMPDIR:-/tmp}" \
+    -v "${HOME}/.cache:${HOME}/.cache" \
+    -w "${ROOT}" \
+    "${image}" \
+    bash "${ROOT}/scripts/ci-flarum-f2-bell-browser.sh"
+}
+maybe_reexec_docker
+
 cleanup() {
   if [[ -n "${HTTP_PID:-}" ]]; then
     kill "${HTTP_PID}" >/dev/null 2>&1 || true
@@ -35,8 +74,10 @@ if [[ ! -f "${MSG_ROOT}/composer.json" ]]; then
   exit 1
 fi
 
-DM_SHA="$(git -C "${ROOT}" rev-parse HEAD)"
-MSG_SHA="$(git -C "${MSG_ROOT}" rev-parse HEAD)"
+git config --global --add safe.directory "${ROOT}" || true
+git config --global --add safe.directory "${MSG_ROOT}" || true
+DM_SHA="$(git -C "${ROOT}" rev-parse HEAD 2>/dev/null || echo UNKNOWN)"
+MSG_SHA="$(git -C "${MSG_ROOT}" rev-parse HEAD 2>/dev/null || echo UNKNOWN)"
 echo "DM_SHA=${DM_SHA}" | tee "${EVIDENCE_DIR}/pins.txt"
 echo "MSG_SHA=${MSG_SHA}" | tee -a "${EVIDENCE_DIR}/pins.txt"
 
@@ -218,6 +259,20 @@ cat > "${EVIDENCE_DIR}/fixture.json" <<EOF
   "msgSha": "${MSG_SHA}"
 }
 EOF
+
+echo "${SMOKE_ROOT}" > "${EVIDENCE_DIR}/smoke-root.txt"
+echo "${HTTP_PID}" > "${EVIDENCE_DIR}/http-pid.txt"
+
+if [[ "${BELL_SKIP_BROWSER:-0}" == "1" ]]; then
+  echo "BELL_SETUP=PASS skip_browser=1 smoke=${SMOKE_ROOT}" | tee "${EVIDENCE_DIR}/summary.txt"
+  # Keep server alive for host-side Playwright when requested.
+  if [[ "${BELL_HOLD_SERVER:-0}" == "1" ]]; then
+    trap - EXIT
+    echo "BELL_HOLD_SERVER=1 pid=${HTTP_PID}"
+    wait "${HTTP_PID}" || true
+  fi
+  exit 0
+fi
 
 if [[ ! -d "${PLAYWRIGHT_ROOT}/node_modules/@playwright/test" ]]; then
   (cd "${PLAYWRIGHT_ROOT}" && npm ci)
