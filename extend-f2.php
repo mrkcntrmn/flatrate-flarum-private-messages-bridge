@@ -10,6 +10,8 @@
  * Email CTAs use UrlGenerator::path("messages[/direct/{id}"]) because F2 does not
  * register neoncube-private-messages.messages. The Pusher typing route stays
  * unregistered. Authorization still requires a participant row.
+ * MessageResource maps Message::class for notification subject resolution only
+ * (empty endpoints — no public message CRUD routes).
  */
 
 use Flarum\Api\Resource\ForumResource;
@@ -21,6 +23,7 @@ use Neoncube\FlarumPrivateMessages\F2\DeleteMessageAction;
 use Neoncube\FlarumPrivateMessages\F2\ForumResourceFields;
 use Neoncube\FlarumPrivateMessages\F2\ListConversationsAction;
 use Neoncube\FlarumPrivateMessages\F2\ListMessagesAction;
+use Neoncube\FlarumPrivateMessages\F2\MessageResource;
 use Neoncube\FlarumPrivateMessages\F2\ReadMessageAction;
 use Neoncube\FlarumPrivateMessages\F2\ShowConversationAction;
 use Neoncube\FlarumPrivateMessages\F2\UserResourceFields;
@@ -48,6 +51,10 @@ return [
 
     (new Extend\ApiResource(UserResource::class))
         ->fields(UserResourceFields::class),
+
+    // Maps Message::class for NotificationResource subject includes. No Index/
+    // Show/Create/Update/Delete endpoints — see MessageResource::endpoints().
+    new Extend\ApiResource(MessageResource::class),
 
     // Required so NewMessageHandler::sendNewMessageNotification can sync without
     // a PHP fatal and so Alert/Email drivers recognize the blueprint type.

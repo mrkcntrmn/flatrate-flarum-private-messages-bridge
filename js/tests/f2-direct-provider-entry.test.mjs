@@ -18,6 +18,11 @@ const forumF2Entry = readFileSync(join(root, 'js/forum-f2.js'), 'utf8');
 assert.match(indexF2, /registerDirectMessagingProvider\s*\(\s*\)/);
 assert.match(indexF2, /app\.store\.models\.conversations\s*=/);
 assert.match(indexF2, /User\.prototype\.unreadMessages/);
+assert.match(
+  indexF2,
+  /app\.store\.models\[['"]neoncube-private-messages-messages['"]\]\s*=\s*Message/,
+);
+assert.match(indexF2, /app\.notificationComponents\.newPrivateMessage\s*=\s*NewPrivateMessageNotification/);
 assert.doesNotMatch(indexF2, /app\.routes\.messages\s*=/);
 assert.doesNotMatch(indexF2, /path:\s*'\/messages'/);
 assert.doesNotMatch(indexF2, /addConversationsDropdown|NotificationGrid|app\.pusher/);
